@@ -15,6 +15,7 @@ namespace clustalw
 
 class ExtendData
 {
+	/*FIXME: it might be consts!*/
 	public:
 		//SubMatrixParameters
 		static int matrix[clustalw::NUMRES][clustalw::NUMRES];
@@ -43,6 +44,37 @@ class ExtendData
 		ExtendData() {};		
 };
 
+class SWAlgo
+{
+	public:
+		SWAlgo();
+		~SWAlgo();
+		void Pass(const vector<int>* seq1, const vector<int>* seq2, int n, int m, const int, const int);
+		
+		/*FIXME: it might be consts!*/
+		int maxScore;
+		int se1;
+		int se2;
+		int sb1;
+		int sb2;
+		
+	private:
+		void forwardPass(const vector<int>* seq1, const vector<int>* seq2, int n, int m, const int, const int);
+		void reversePass(const vector<int>* ia, const vector<int>* ib, const int, const int);
+		
+		/*
+		int maxScore;
+		int se1;
+		int se2;
+		int sb1;
+		int sb2;
+		*/
+		vector<int> HH;
+    vector<int> DD;
+ 
+		
+};
+
 
 class FullPairwiseAlign : public PairwiseAlignBase
 {
@@ -58,8 +90,8 @@ class FullPairwiseAlign : public PairwiseAlignBase
     private:
         /* Functions */
 				//Algo SW
-				void forwardPass(const vector<int>* seq1, const vector<int>* seq2, int n, int m);
-        void reversePass(const vector<int>* ia, const vector<int>* ib);
+//				void forwardPass(const vector<int>* seq1, const vector<int>* seq2, int n, int m);
+//        void reversePass(const vector<int>* ia, const vector<int>* ib);
         //Algo MM
         int diff(int A, int B, int M, int N, int tb, int te);
         void add(int v);
@@ -86,13 +118,17 @@ class FullPairwiseAlign : public PairwiseAlignBase
 
         int _gapOpen; // scaled to be an integer, this is not a mistake
         int _gapExtend; // scaled to be an integer, not a mistake
+     
         int seq1;
         int seq2;
+     
         int maxScore;
+     /* 
         int sb1;
         int sb2;
         int se1;
         int se2;
+      */
 
 };
 

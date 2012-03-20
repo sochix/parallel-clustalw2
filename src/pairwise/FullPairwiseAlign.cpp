@@ -78,6 +78,167 @@ void ExtendData::InitAlignmentParameters(clustalw::Alignment* alignPtr)
 	numSeqs = alignPtr->getNumSeqs();
 	
 }
+//=========START SWALGO CLASS============================
+
+SWAlgo::SWAlgo():
+	sb1(0),
+	sb2(0),
+	se1(0),
+	se2(0)
+{
+	 HH.resize(ExtendData::maxAlnLength);
+   DD.resize(ExtendData::maxAlnLength);
+}
+
+SWAlgo::~SWAlgo()
+{
+}
+
+void SWAlgo::Pass(const vector<int>* seq1, const vector<int>* seq2, int n, int m, const int gapOpen, const int gapExtend)
+{
+	forwardPass(seq1, seq2, n,m, gapOpen, gapExtend);
+	reversePass(seq1, seq2, gapOpen, gapExtend);
+}
+
+void SWAlgo::forwardPass(const vector<int>* seq1, const vector<int>* seq2, int n, int m, const int _gapOpen, const int _gapExtend)
+{
+    int i, j;
+    int f, hh, p, t;
+
+    maxScore = 0;
+    se1 = se2 = 0;
+    for (i = 0; i <= m; i++)
+    {
+        HH[i] = 0;
+        DD[i] =  -_gapOpen;
+    }
+
+    for (i = 1; i <= n; i++)
+    {
+        hh = p = 0;
+        f =  -_gapOpen;
+
+        for (j = 1; j <= m; j++)
+        {
+
+            f -= _gapExtend;
+            t = hh - _gapOpen - _gapExtend;
+            if (f < t)
+            {
+                f = t;
+            }
+
+            DD[j] -= _gapExtend;
+            t = HH[j] - _gapOpen - _gapExtend;
+            if (DD[j] < t)
+            {
+                DD[j] = t;
+            }
+
+            hh = p + ExtendData::matrix[(*seq1)[i]][(*seq2)[j]];
+            if (hh < f)
+            {
+                hh = f;
+            }
+            if (hh < DD[j])
+            {
+                hh = DD[j];
+            }
+            if (hh < 0)
+            {
+                hh = 0;
+            }
+
+            p = HH[j];
+            HH[j] = hh;
+
+            if (hh > maxScore)
+            {
+                maxScore = hh;
+                se1 = i;
+                se2 = j;
+            }
+        }
+    }
+
+}
+
+void SWAlgo::reversePass(const vector<int>* seq1, const vector<int>* seq2, const int _gapOpen, const int _gapExtend)
+{
+    int i, j;
+    int f, hh, p, t;
+    int cost;
+
+    cost = 0;
+    sb1 = sb2 = 1;
+    for (i = se2; i > 0; i--)
+    {
+        HH[i] =  - 1;
+        DD[i] =  - 1;
+    }
+
+    for (i = se1; i > 0; i--)
+    {
+        hh = f =  - 1;
+        if (i == se1)
+        {
+            p = 0;
+        }
+        else
+        {
+            p =  - 1;
+        }
+
+        for (j = se2; j > 0; j--)
+        {
+
+            f -= _gapExtend;
+            t = hh - _gapOpen - _gapExtend;
+            if (f < t)
+            {
+                f = t;
+            }
+
+            DD[j] -= _gapExtend;
+            t = HH[j] - _gapOpen - _gapExtend;
+            if (DD[j] < t)
+            {
+                DD[j] = t;
+            }
+
+            hh = p + ExtendData::matrix[(*seq1)[i]][(*seq2)[j]];
+            if (hh < f)
+            {
+                hh = f;
+            }
+            if (hh < DD[j])
+            {
+                hh = DD[j];
+            }
+
+            p = HH[j];
+            HH[j] = hh;
+
+            if (hh > cost)
+            {
+                cost = hh;
+                sb1 = i;
+                sb2 = j;
+                if (cost >= maxScore)
+                {
+                    break;
+                }
+            }
+        }
+        if (cost >= maxScore)
+        {
+            break;
+        }
+    }
+
+}
+
+//=========START FULLPAIRWISE ALIGN======================
 
 FullPairwiseAlign::FullPairwiseAlign()
 : mmScore(0),
@@ -87,11 +248,7 @@ FullPairwiseAlign::FullPairwiseAlign()
   _gapExtend(0),
   seq1(0),
   seq2(0),
-  maxScore(0),
-  sb1(0),
-  sb2(0),
-  se1(0),
-  se2(0)
+  maxScore(0)
 {
 
 }
@@ -138,6 +295,8 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
         
         const SeqArray* _ptrToSeqArray = alignPtr->getSeqArray(); //This is faster! 
     
+		    SWAlgo swalgo;
+    
         for (si = utilityObject->MAX(0, iStart); si < ExtendData::numSeqs && si < iEnd; si++)
         {
             n = alignPtr->getSeqLength(si + 1);
@@ -178,20 +337,24 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
                 _ptrToSeq1 = alignPtr->getSequence(seq1);
                 _ptrToSeq2 = alignPtr->getSequence(seq2);
             
+            		swalgo.Pass(_ptrToSeq1, _ptrToSeq2, n, m, _gapOpen, _gapExtend);
+            
+               /*
                 forwardPass(_ptrToSeq1, _ptrToSeq2, n, m);
                 reversePass(_ptrToSeq1, _ptrToSeq2);
+               */
 
                 lastPrint = 0;
                 printPtr = 1;
 
                 // use Myers and Miller to align two sequences 
 
-                maxScore = diff(sb1 - 1, sb2 - 1, se1 - sb1 + 1, se2 - sb2 + 1,
+                maxScore = diff(swalgo.sb1 - 1, swalgo.sb2 - 1, swalgo.se1 - swalgo.sb1 + 1, swalgo.se2 - swalgo.sb2 + 1,
                     (int)0, (int)0);
 
                 // calculate percentage residue identity
 
-                mmScore = tracePath(sb1, sb2);
+                mmScore = tracePath(swalgo.sb1, swalgo.sb2);
 
                 if (len1 == 0 || len2 == 0)
                 {
@@ -295,143 +458,6 @@ float FullPairwiseAlign::tracePath(int tsb1, int tsb2)
     return (score);
 }
 
-void FullPairwiseAlign::forwardPass(const vector<int>* seq1, const vector<int>* seq2, int n, int m)
-{
-    int i, j;
-    int f, hh, p, t;
-
-    maxScore = 0;
-    se1 = se2 = 0;
-    for (i = 0; i <= m; i++)
-    {
-        HH[i] = 0;
-        DD[i] =  -_gapOpen;
-    }
-
-    for (i = 1; i <= n; i++)
-    {
-        hh = p = 0;
-        f =  -_gapOpen;
-
-        for (j = 1; j <= m; j++)
-        {
-
-            f -= _gapExtend;
-            t = hh - _gapOpen - _gapExtend;
-            if (f < t)
-            {
-                f = t;
-            }
-
-            DD[j] -= _gapExtend;
-            t = HH[j] - _gapOpen - _gapExtend;
-            if (DD[j] < t)
-            {
-                DD[j] = t;
-            }
-
-            hh = p + ExtendData::matrix[(*seq1)[i]][(*seq2)[j]];
-            if (hh < f)
-            {
-                hh = f;
-            }
-            if (hh < DD[j])
-            {
-                hh = DD[j];
-            }
-            if (hh < 0)
-            {
-                hh = 0;
-            }
-
-            p = HH[j];
-            HH[j] = hh;
-
-            if (hh > maxScore)
-            {
-                maxScore = hh;
-                se1 = i;
-                se2 = j;
-            }
-        }
-    }
-
-}
-
-void FullPairwiseAlign::reversePass(const vector<int>* seq1, const vector<int>* seq2)
-{
-    int i, j;
-    int f, hh, p, t;
-    int cost;
-
-    cost = 0;
-    sb1 = sb2 = 1;
-    for (i = se2; i > 0; i--)
-    {
-        HH[i] =  - 1;
-        DD[i] =  - 1;
-    }
-
-    for (i = se1; i > 0; i--)
-    {
-        hh = f =  - 1;
-        if (i == se1)
-        {
-            p = 0;
-        }
-        else
-        {
-            p =  - 1;
-        }
-
-        for (j = se2; j > 0; j--)
-        {
-
-            f -= _gapExtend;
-            t = hh - _gapOpen - _gapExtend;
-            if (f < t)
-            {
-                f = t;
-            }
-
-            DD[j] -= _gapExtend;
-            t = HH[j] - _gapOpen - _gapExtend;
-            if (DD[j] < t)
-            {
-                DD[j] = t;
-            }
-
-            hh = p + ExtendData::matrix[(*seq1)[i]][(*seq2)[j]];
-            if (hh < f)
-            {
-                hh = f;
-            }
-            if (hh < DD[j])
-            {
-                hh = DD[j];
-            }
-
-            p = HH[j];
-            HH[j] = hh;
-
-            if (hh > cost)
-            {
-                cost = hh;
-                sb1 = i;
-                sb2 = j;
-                if (cost >= maxScore)
-                {
-                    break;
-                }
-            }
-        }
-        if (cost >= maxScore)
-        {
-            break;
-        }
-    }
-
-}
 
 int FullPairwiseAlign::diff(int A, int B, int M, int N, int tb, int te)
 {
