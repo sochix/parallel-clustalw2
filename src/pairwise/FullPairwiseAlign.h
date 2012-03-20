@@ -7,9 +7,45 @@
 #define FULLPAIRWISEALIGN_H
 
 #include "PairwiseAlignBase.h"
+//include "I_ExtendData.h"
 
 namespace clustalw
 {
+
+
+class ExtendData
+{
+	public:
+		//SubMatrixParameters
+		static int matrix[clustalw::NUMRES][clustalw::NUMRES];
+		static int intScale;
+		static float gapOpenScale;
+		static float gapExtendScale;
+		static int matAvgScore;
+		static int maxRes;
+		//UserParameters
+		static bool DNAFlag;
+		static float pwGapOpen;
+		static float pwGapExtend;
+		static int gapPos1;
+		static int gapPos2;
+		//AlignmentParameters
+		static int maxAlnLength;
+		static int numSeqs;
+		//Funcs
+		static void InitSubMatrixParameters(clustalw::SubMatrix* subMat);
+		static void InitUserParameters(clustalw::UserParameters* userParameters);
+		static void InitAlignmentParameters(clustalw::Alignment* alignPtr);
+		static void UpdateGapOpenAndExtend(int&, int&, int, int);
+	
+	private:
+		ExtendData(const ExtendData&) {};
+		ExtendData() {};
+		
+	
+		
+};
+
 
 class FullPairwiseAlign : public PairwiseAlignBase
 {
@@ -38,8 +74,8 @@ class FullPairwiseAlign : public PairwiseAlignBase
         // I have constant pointers to the data. This allows for the fastest access.
         const vector<int>* _ptrToSeq1;
         const vector<int>* _ptrToSeq2;
-        int _maxAlnLength;
-        int intScale;
+     //   int _maxAlnLength;
+      //  int intScale;
         float mmScore;
         int printPtr;
         int lastPrint;
@@ -53,7 +89,7 @@ class FullPairwiseAlign : public PairwiseAlignBase
         int _gapExtend; // scaled to be an integer, not a mistake
         int seq1;
         int seq2;
-        int matrix[NUMRES][NUMRES];
+      //  int matrix[NUMRES][NUMRES];
         int maxScore;
         int sb1;
         int sb2;

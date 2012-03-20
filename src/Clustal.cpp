@@ -37,6 +37,7 @@
 #include "general/ClustalWResources.h"
 #include "Help.h"
 #include <ctime>
+//#include "pairwise/I_ExtendData.h"
 
 using namespace std;
 
@@ -153,7 +154,17 @@ void Clustal::align(string* phylipName, bool createOutput)
     else
     {
         pairwiseDist = new FullPairwiseAlign();
+        
     }
+    
+    /* My code START*/
+    // First do some init steps
+
+		ExtendData::InitSubMatrixParameters(subMatrix);
+		ExtendData::InitUserParameters(userParameters);
+		ExtendData::InitAlignmentParameters(&alignmentObj);
+
+    /* My code END*/
     // Generate distance matrix!
     pairwiseDist->pairwiseAlign(&alignmentObj, &distMat, 0, _numSeqs, 0, _numSeqs);
     delete pairwiseDist;

@@ -11,11 +11,76 @@
 
 namespace clustalw
 {
+//SubMatrixParameters
+int 	ExtendData::matrix[clustalw::NUMRES][clustalw::NUMRES];
+int 	ExtendData::intScale;
+int 	ExtendData::matAvgScore;
+int 	ExtendData::maxRes;
+float ExtendData::gapOpenScale;
+float ExtendData::gapExtendScale;
+//UserParameters
+bool	ExtendData::DNAFlag;
+int 	ExtendData::gapPos1;
+int 	ExtendData::gapPos2;
+float ExtendData::pwGapOpen;
+float ExtendData::pwGapExtend;
+//AlignmentParameters
+int 	ExtendData::maxAlnLength;
+int		ExtendData::numSeqs;
+
+void ExtendData::InitSubMatrixParameters(SubMatrix* subMat)
+{
+		PairScaleValues scaleValues;
+				
+	  maxRes = subMatrix->getPairwiseMatrix(matrix, scaleValues, matAvgScore);
+	
+	  intScale = scaleValues.intScale;
+    gapOpenScale = scaleValues.gapOpenScale;
+    gapExtendScale = scaleValues.gapExtendScale;
+}
+
+void ExtendData::InitUserParameters(clustalw::UserParameters* userParameters)
+{
+		DNAFlag = userParameters->getDNAFlag();
+		pwGapOpen = userParameters->getPWGapOpen();
+    pwGapExtend = userParameters->getPWGapExtend();
+		gapPos1 = userParameters->getGapPos1();
+		gapPos2 = userParameters->getGapPos2();    
+}
+
+void ExtendData::UpdateGapOpenAndExtend(int& _gapOpen, int& _gapExtend, int n, int m)
+{
+	 if (ExtendData::DNAFlag)
+   {
+        _gapOpen = static_cast<int>(2 * ExtendData::pwGapOpen * ExtendData::intScale *
+                        ExtendData::gapOpenScale);
+        _gapExtend = static_cast<int>(ExtendData::pwGapExtend * ExtendData::intScale * ExtendData::gapExtendScale);
+   }
+   else
+   {
+        if (ExtendData::matAvgScore <= 0)
+        {
+            _gapOpen = 2 * static_cast<int>((ExtendData::pwGapOpen +
+                   log(static_cast<double>(utilityObject->MIN(n, m)))) * ExtendData::intScale);
+        }
+        else
+        {
+            _gapOpen = static_cast<int>(2 * ExtendData::matAvgScore * (ExtendData::pwGapOpen +
+            log(static_cast<double>(utilityObject->MIN(n, m)))) * ExtendData::gapOpenScale);
+        }
+        _gapExtend = static_cast<int>(ExtendData::pwGapExtend * ExtendData::intScale);
+    }
+}
+
+void ExtendData::InitAlignmentParameters(clustalw::Alignment* alignPtr)
+{
+	maxAlnLength = alignPtr->getMaxAlnLength();
+	numSeqs = alignPtr->getNumSeqs();
+	
+}
 
 FullPairwiseAlign::FullPairwiseAlign()
-: _maxAlnLength(0),
-  intScale(0),
-  mmScore(0),
+: mmScore(0),
   printPtr(0),
   lastPrint(0),
   _gapOpen(0),
@@ -35,11 +100,8 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
 {
     int si, sj, i;
     int n, m, len1, len2;
-    int maxRes;
-    int _matAvgScore;
     int res;
     double _score;
-    float gapOpenScale, gapExtendScale;
     
     try
     {
@@ -57,57 +119,39 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
             exit(1);
         }
         
-        _maxAlnLength = alignPtr->getMaxAlnLength();
-    
-        int _numSeqs = alignPtr->getNumSeqs();
-        if(_numSeqs == 0)
+        if(ExtendData::numSeqs == 0)
         {
             return;
         }
-    
-        int num = (2 * _maxAlnLength) + 1;
-        bool _DNAFlag = userParameters->getDNAFlag();
-        float _pwGapOpen, _pwGapExtend;
-        _pwGapOpen = userParameters->getPWGapOpen();
-        _pwGapExtend = userParameters->getPWGapExtend();
-        
-        displ.resize(num);
-        HH.resize(_maxAlnLength);
-        DD.resize(_maxAlnLength);
-        RR.resize(_maxAlnLength);
-        SS.resize(_maxAlnLength);
-        // Note these 2 lines replace the stuff above because it is all done in the SubMatrix
-        PairScaleValues scaleValues;
-        maxRes = subMatrix->getPairwiseMatrix(matrix, scaleValues, _matAvgScore);
-        if (maxRes == 0)
+           
+        displ.resize((2 * ExtendData::maxAlnLength) + 1);
+        HH.resize(ExtendData::maxAlnLength);
+        DD.resize(ExtendData::maxAlnLength);
+        RR.resize(ExtendData::maxAlnLength);
+        SS.resize(ExtendData::maxAlnLength);
+                
+        if (ExtendData::maxRes == 0)
         {
             cerr << "Could not get the substitution matrix\n";
             return;
         }
         
-        intScale = scaleValues.intScale;
-        gapOpenScale = scaleValues.gapOpenScale;
-        gapExtendScale = scaleValues.gapExtendScale;
-    
-        int _gapPos1, _gapPos2;
-        _gapPos1 = userParameters->getGapPos1();
-        _gapPos2 = userParameters->getGapPos2();
         const SeqArray* _ptrToSeqArray = alignPtr->getSeqArray(); //This is faster! 
     
-        for (si = utilityObject->MAX(0, iStart); si < _numSeqs && si < iEnd; si++)
+        for (si = utilityObject->MAX(0, iStart); si < ExtendData::numSeqs && si < iEnd; si++)
         {
             n = alignPtr->getSeqLength(si + 1);
             len1 = 0;
             for (i = 1; i <= n; i++)
             {
                 res = (*_ptrToSeqArray)[si + 1][i];
-                if ((res != _gapPos1) && (res != _gapPos2))
+                if ((res != ExtendData::gapPos1) && (res != ExtendData::gapPos2))
                 {
                     len1++;
                 }
             }
 
-            for (sj = utilityObject->MAX(si+1, jStart+1); sj < _numSeqs && sj < jEnd; sj++)
+            for (sj = utilityObject->MAX(si+1, jStart+1); sj < ExtendData::numSeqs && sj < jEnd; sj++)
             {
                 m = alignPtr->getSeqLength(sj + 1);
                 if (n == 0 || m == 0)
@@ -120,32 +164,12 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
                 for (i = 1; i <= m; i++)
                 {
                     res = (*_ptrToSeqArray)[sj + 1][i];
-                    if ((res != _gapPos1) && (res != _gapPos2))
+                    if ((res != ExtendData::gapPos1) && (res != ExtendData::gapPos2))
                     {
                         len2++;
                     }
                 }
-
-                if (_DNAFlag)
-                {
-                    _gapOpen = static_cast<int>(2 * _pwGapOpen * intScale *
-                                    gapOpenScale);
-                    _gapExtend = static_cast<int>(_pwGapExtend * intScale * gapExtendScale);
-                }
-                else
-                {
-                    if (_matAvgScore <= 0)
-                    {
-                        _gapOpen = 2 * static_cast<int>((_pwGapOpen +
-                               log(static_cast<double>(utilityObject->MIN(n, m)))) * intScale);
-                    }
-                    else
-                    {
-                        _gapOpen = static_cast<int>(2 * _matAvgScore * (_pwGapOpen +
-                        log(static_cast<double>(utilityObject->MIN(n, m)))) * gapOpenScale);
-                    }
-                    _gapExtend = static_cast<int>(_pwGapExtend * intScale);
-                }
+								ExtendData::UpdateGapOpenAndExtend(_gapOpen, _gapExtend, n, m);
                 // align the sequences
             
                 seq1 = si + 1;
@@ -219,7 +243,7 @@ void FullPairwiseAlign::add(int v)
 
 inline int FullPairwiseAlign::calcScore(int iat, int jat, int v1, int v2)
 {
-    return matrix[(*_ptrToSeq1)[v1 + iat]][(*_ptrToSeq2)[v2 + jat]];
+    return ExtendData::matrix[(*_ptrToSeq1)[v1 + iat]][(*_ptrToSeq2)[v2 + jat]];
 }
 
 float FullPairwiseAlign::tracePath(int tsb1, int tsb2)
@@ -306,7 +330,7 @@ void FullPairwiseAlign::forwardPass(const vector<int>* seq1, const vector<int>* 
                 DD[j] = t;
             }
 
-            hh = p + matrix[(*seq1)[i]][(*seq2)[j]];
+            hh = p + ExtendData::matrix[(*seq1)[i]][(*seq2)[j]];
             if (hh < f)
             {
                 hh = f;
@@ -377,7 +401,7 @@ void FullPairwiseAlign::reversePass(const vector<int>* seq1, const vector<int>* 
                 DD[j] = t;
             }
 
-            hh = p + matrix[(*seq1)[i]][(*seq2)[j]];
+            hh = p + ExtendData::matrix[(*seq1)[i]][(*seq2)[j]];
             if (hh < f)
             {
                 hh = f;

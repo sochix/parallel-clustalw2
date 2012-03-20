@@ -4,7 +4,7 @@
 # http://www.bioinf.uni-freiburg.de/~mmann/HowTo/automake.html
 
 # we do not use GNU-style files: NEWS README AUTHORS ChangeLog
-AUTOMAKE_OPTIONS = foreign
+AUTOMAKE_OPTIONS = foreign subdir-objects
 
 SUBDIRS = m4 src
 
