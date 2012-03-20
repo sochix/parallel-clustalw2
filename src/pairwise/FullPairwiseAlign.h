@@ -40,10 +40,7 @@ class ExtendData
 	
 	private:
 		ExtendData(const ExtendData&) {};
-		ExtendData() {};
-		
-	
-		
+		ExtendData() {};		
 };
 
 
@@ -60,22 +57,24 @@ class FullPairwiseAlign : public PairwiseAlignBase
 
     private:
         /* Functions */
-        void add(int v);
-        int calcScore(int iat, int jat, int v1, int v2); 
-        float tracePath(int tsb1, int tsb2);
-        void forwardPass(const vector<int>* seq1, const vector<int>* seq2, int n, int m);
+				//Algo SW
+				void forwardPass(const vector<int>* seq1, const vector<int>* seq2, int n, int m);
         void reversePass(const vector<int>* ia, const vector<int>* ib);
+        //Algo MM
         int diff(int A, int B, int M, int N, int tb, int te);
+        void add(int v);
         void del(int k);
-        int gap(int k);
+        int calcScore(int iat, int jat, int v1, int v2); 
         int tbgap(int k, int tb);
         int tegap(int k, int te);
+        //Other stuff
+        float tracePath(int tsb1, int tsb2);       
+        int gap(int k);
+        
         /* Attributes */
         // I have constant pointers to the data. This allows for the fastest access.
         const vector<int>* _ptrToSeq1;
         const vector<int>* _ptrToSeq2;
-     //   int _maxAlnLength;
-      //  int intScale;
         float mmScore;
         int printPtr;
         int lastPrint;
@@ -89,7 +88,6 @@ class FullPairwiseAlign : public PairwiseAlignBase
         int _gapExtend; // scaled to be an integer, not a mistake
         int seq1;
         int seq2;
-      //  int matrix[NUMRES][NUMRES];
         int maxScore;
         int sb1;
         int sb2;

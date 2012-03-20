@@ -123,18 +123,18 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
         {
             return;
         }
-           
-        displ.resize((2 * ExtendData::maxAlnLength) + 1);
-        HH.resize(ExtendData::maxAlnLength);
-        DD.resize(ExtendData::maxAlnLength);
-        RR.resize(ExtendData::maxAlnLength);
-        SS.resize(ExtendData::maxAlnLength);
-                
+        
         if (ExtendData::maxRes == 0)
         {
             cerr << "Could not get the substitution matrix\n";
             return;
         }
+           
+        displ.resize((2 * ExtendData::maxAlnLength) + 1);
+        HH.resize(ExtendData::maxAlnLength);
+        DD.resize(ExtendData::maxAlnLength);
+        RR.resize(ExtendData::maxAlnLength);
+        SS.resize(ExtendData::maxAlnLength);  
         
         const SeqArray* _ptrToSeqArray = alignPtr->getSeqArray(); //This is faster! 
     
