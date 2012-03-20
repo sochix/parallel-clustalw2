@@ -62,26 +62,36 @@ class SWAlgo
 		void forwardPass(const vector<int>* seq1, const vector<int>* seq2, int n, int m, const int, const int);
 		void reversePass(const vector<int>* ia, const vector<int>* ib, const int, const int);
 		
-		/*
-		int maxScore;
-		int se1;
-		int se2;
-		int sb1;
-		int sb2;
-		*/
 		vector<int> HH;
-    vector<int> DD;
- 
-		
+    vector<int> DD;		
 };
 
+class MMAlgo
+{
+		public:
+			MMAlgo();
+			~MMAlgo();
+		private:
+			int diff(int A, int B, int M, int N, int tb, int te);
+      void add(int v);
+      void del(int k);
+      int calcScore(int iat, int jat, int v1, int v2); 
+      int tbgap(int k, int tb);
+      int tegap(int k, int te);
+      
+			vector<int> HH;
+      vector<int> DD;
+      vector<int> RR;
+      vector<int> SS;
+      
+};
 
 class FullPairwiseAlign : public PairwiseAlignBase
 {
     public:
         /* Functions */
         FullPairwiseAlign();
-	virtual ~FullPairwiseAlign(){};
+				virtual ~FullPairwiseAlign(){};
 
         virtual void pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, int iStart, 
                                    int iEnd, int jStart, int jEnd); 
@@ -89,16 +99,15 @@ class FullPairwiseAlign : public PairwiseAlignBase
 
     private:
         /* Functions */
-				//Algo SW
-//				void forwardPass(const vector<int>* seq1, const vector<int>* seq2, int n, int m);
-//        void reversePass(const vector<int>* ia, const vector<int>* ib);
         //Algo MM
+        /*
         int diff(int A, int B, int M, int N, int tb, int te);
         void add(int v);
         void del(int k);
         int calcScore(int iat, int jat, int v1, int v2); 
         int tbgap(int k, int tb);
-        int tegap(int k, int te);
+        int tegap(int k, int te);\
+        */
         //Other stuff
         float tracePath(int tsb1, int tsb2);       
         int gap(int k);
@@ -111,11 +120,12 @@ class FullPairwiseAlign : public PairwiseAlignBase
         int printPtr;
         int lastPrint;
         vector<int> displ;
+     /* 
         vector<int> HH;
         vector<int> DD;
         vector<int> RR;
         vector<int> SS;
-
+		*/
         int _gapOpen; // scaled to be an integer, this is not a mistake
         int _gapExtend; // scaled to be an integer, not a mistake
      
@@ -123,12 +133,6 @@ class FullPairwiseAlign : public PairwiseAlignBase
         int seq2;
      
         int maxScore;
-     /* 
-        int sb1;
-        int sb2;
-        int se1;
-        int se2;
-      */
 
 };
 

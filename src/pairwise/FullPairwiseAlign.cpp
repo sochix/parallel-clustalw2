@@ -84,7 +84,8 @@ SWAlgo::SWAlgo():
 	sb1(0),
 	sb2(0),
 	se1(0),
-	se2(0)
+	se2(0),
+	maxScore(0)
 {
 	 HH.resize(ExtendData::maxAlnLength);
    DD.resize(ExtendData::maxAlnLength);
@@ -237,6 +238,9 @@ void SWAlgo::reversePass(const vector<int>* seq1, const vector<int>* seq2, const
     }
 
 }
+
+//=========START MMALGO
+
 
 //=========START FULLPAIRWISE ALIGN======================
 
