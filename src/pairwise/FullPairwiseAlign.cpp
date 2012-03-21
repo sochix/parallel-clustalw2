@@ -66,8 +66,10 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
 		    MMAlgo mmalgo;
     
     		double startTime = omp_get_wtime();
-    
-        for (si = utilityObject->MAX(0, iStart); si < ExtendData::numSeqs && si < iEnd; si++)
+    		// Simplify loop vars for OMP
+    		int initSi = utilityObject->MAX(0, iStart),
+    				boundSi = utilityObject->MIN(ExtendData::numSeqs,iEnd);
+    		for (si = initSi; si < boundSi; si++)
         {
             n = alignPtr->getSeqLength(si + 1);
             len1 = 0;
@@ -80,7 +82,10 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
                 }
             }
 						
-						for (sj = utilityObject->MAX(si+1, jStart+1); sj < ExtendData::numSeqs && sj < jEnd; sj++)
+						// Simplify loop vars for OMP
+						int initSj = utilityObject->MAX(si+1, jStart+1),
+						    boundSj = utilityObject->MIN(ExtendData::numSeqs,jEnd);
+						for (sj = initSj; sj <  boundSj ; sj++)
             {
                 m = alignPtr->getSeqLength(sj + 1);
                 if (n == 0 || m == 0)
