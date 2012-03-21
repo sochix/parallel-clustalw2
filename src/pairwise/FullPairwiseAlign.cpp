@@ -8,6 +8,7 @@
 #endif
 #include "FullPairwiseAlign.h"
 #include <math.h>
+#include <omp.h>
 
 namespace clustalw
 {
@@ -62,6 +63,9 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
        	const SeqArray* _ptrToSeqArray = alignPtr->getSeqArray(); //This is faster! 
     
 		    SWAlgo swalgo;
+		    MMAlgo mmalgo;
+    
+    		double startTime = omp_get_wtime();
     
         for (si = utilityObject->MAX(0, iStart); si < ExtendData::numSeqs && si < iEnd; si++)
         {
@@ -75,8 +79,8 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
                     len1++;
                 }
             }
-
-            for (sj = utilityObject->MAX(si+1, jStart+1); sj < ExtendData::numSeqs && sj < jEnd; sj++)
+						
+						for (sj = utilityObject->MAX(si+1, jStart+1); sj < ExtendData::numSeqs && sj < jEnd; sj++)
             {
                 m = alignPtr->getSeqLength(sj + 1);
                 if (n == 0 || m == 0)
@@ -107,7 +111,7 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
             
    	            // use Myers and Miller to align two sequences 
 
-								MMAlgo mmalgo;
+								
 								maxScore = mmalgo.Pass(swalgo.sb1 - 1, swalgo.sb2 - 1, swalgo.se1 - swalgo.sb1 + 1, swalgo.se2 - swalgo.sb2 + 1,
                     (int)0, (int)0, _ptrToSeq1, _ptrToSeq2, _gapOpen, _gapExtend);
       
@@ -135,6 +139,8 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
                 }
             }
         }
+        double endTime = omp_get_wtime() - startTime;
+        cout << endl << "[OMP] Elapsed time: " << endTime << " .sec" << endl;
     }
     catch(const exception& e)
     {
