@@ -110,11 +110,8 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
 								MMAlgo mmalgo;
 								maxScore = mmalgo.Pass(swalgo.sb1 - 1, swalgo.sb2 - 1, swalgo.se1 - swalgo.sb1 + 1, swalgo.se2 - swalgo.sb2 + 1,
                     (int)0, (int)0, _ptrToSeq1, _ptrToSeq2, _gapOpen, _gapExtend);
-               /*
-                maxScore = diff(swalgo.sb1 - 1, swalgo.sb2 - 1, swalgo.se1 - swalgo.sb1 + 1, swalgo.se2 - swalgo.sb2 + 1,
-                    (int)0, (int)0);
-								*/
-                // calculate percentage residue identity
+      
+                 // calculate percentage residue identity
 
                 mmScore = tracePath(swalgo.sb1, swalgo.sb2, mmalgo.displ, mmalgo.printPtr);
 
@@ -138,13 +135,6 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
                 }
             }
         }
-/*
-        displ.clear();
-        HH.clear();
-        DD.clear();
-        RR.clear();
-        SS.clear();
-   */
     }
     catch(const exception& e)
     {
