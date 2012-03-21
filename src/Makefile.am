@@ -6,7 +6,9 @@
 # we do not use GNU-style files: NEWS README AUTHORS ChangeLog
 AUTOMAKE_OPTIONS = foreign
 
-SUBDIRS = 
+#SUBDIRS = pairwise fileInput tree/UPGMA tree  interface substitutionMatrix multipleAlign general alignment
+
+SUBDIRS=
 
 #EXTRA_DIST =
 # got the following with automake 1.10 (AW 2009-05-19):
@@ -23,6 +25,12 @@ clustalw2_SOURCES =  ./pairwise/PairwiseAlignBase.h \
  ./pairwise/FullPairwiseAlign.cpp \
  ./pairwise/FullPairwiseAlign.h \
  ./pairwise/FastPairwiseAlign.cpp \
+ ./pairwise/I_ExtendData.h \
+ ./pairwise/I_ExtendData.cpp \
+ ./pairwise/I_MMAlgo.h \
+ ./pairwise/I_MMAlgo.cpp \
+ ./pairwise/I_SWAlgo.h \
+ ./pairwise/I_SWAlgo.cpp \
  ./fileInput/FileParser.h \
  ./fileInput/EMBLFileParser.h \
  ./fileInput/MSFFileParser.cpp \

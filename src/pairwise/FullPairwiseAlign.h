@@ -7,97 +7,12 @@
 #define FULLPAIRWISEALIGN_H
 
 #include "PairwiseAlignBase.h"
-//include "I_ExtendData.h"
+#include "I_SWAlgo.h"
+#include "I_MMAlgo.h"
+#include "I_ExtendData.h"
 
 namespace clustalw
 {
-
-
-class ExtendData
-{
-	/*FIXME: it might be consts!*/
-	public:
-		//SubMatrixParameters
-		static int matrix[clustalw::NUMRES][clustalw::NUMRES];
-		static int intScale;
-		static float gapOpenScale;
-		static float gapExtendScale;
-		static int matAvgScore;
-		static int maxRes;
-		//UserParameters
-		static bool DNAFlag;
-		static float pwGapOpen;
-		static float pwGapExtend;
-		static int gapPos1;
-		static int gapPos2;
-		//AlignmentParameters
-		static int maxAlnLength;
-		static int numSeqs;
-		//Funcs
-		static void InitSubMatrixParameters(clustalw::SubMatrix* subMat);
-		static void InitUserParameters(clustalw::UserParameters* userParameters);
-		static void InitAlignmentParameters(clustalw::Alignment* alignPtr);
-		static void UpdateGapOpenAndExtend(int&, int&, int, int);
-	
-	private:
-		ExtendData(const ExtendData&) {};
-		ExtendData() {};		
-};
-
-class SWAlgo
-{
-	public:
-		SWAlgo();
-		~SWAlgo();
-		void Pass(const vector<int>* seq1, const vector<int>* seq2, int n, int m, const int, const int);
-		
-		/*FIXME: it might be consts!*/
-		int maxScore;
-		int se1;
-		int se2;
-		int sb1;
-		int sb2;
-		
-	private:
-		void forwardPass(const vector<int>* seq1, const vector<int>* seq2, int n, int m, const int, const int);
-		void reversePass(const vector<int>* ia, const vector<int>* ib, const int, const int);
-		
-		vector<int> HH;
-    vector<int> DD;		
-};
-
-class MMAlgo
-{
-		public:
-			MMAlgo();
-			~MMAlgo();
-			int Pass(int A, int B, int M, int N, int tb, int te, const vector<int>* seq1, const vector<int>* seq2, const int, const int);
-
-			//FIXME: must be in private
-			int printPtr;
-			vector<int> displ;
-			
-		private:
-			int diff(int A, int B, int M, int N, int tb, int te);
-      void add(int v);
-      void del(int k);
-      int calcScore(int iat, int jat, int v1, int v2); 
-      int tbgap(int k, int tb);
-      int tegap(int k, int te);
-      
-      int lastPrint;
-      vector<int> HH;
-      vector<int> DD;
-      vector<int> RR;
-      vector<int> SS;
-      
-      const vector<int>* _ptrToSeq1;
-      const vector<int>* _ptrToSeq2;
-      
-      int _gapOpen;
-      int _gapExtend;
-      
-};
 
 class FullPairwiseAlign : public PairwiseAlignBase
 {

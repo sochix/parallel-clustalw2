@@ -37,7 +37,10 @@
 #include "general/ClustalWResources.h"
 #include "Help.h"
 #include <ctime>
-//#include "pairwise/I_ExtendData.h"
+
+#include "pairwise/I_ExtendData.h"
+
+
 
 using namespace std;
 

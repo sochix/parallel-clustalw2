@@ -55,7 +55,8 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_clustalw2_OBJECTS = FullPairwiseAlign.$(OBJEXT) \
-	FastPairwiseAlign.$(OBJEXT) MSFFileParser.$(OBJEXT) \
+	FastPairwiseAlign.$(OBJEXT) I_ExtendData.$(OBJEXT) \
+	I_MMAlgo.$(OBJEXT) I_SWAlgo.$(OBJEXT) MSFFileParser.$(OBJEXT) \
 	FileReader.$(OBJEXT) PIRFileParser.$(OBJEXT) \
 	RSFFileParser.$(OBJEXT) GDEFileParser.$(OBJEXT) \
 	InFileStream.$(OBJEXT) ClustalFileParser.$(OBJEXT) \
@@ -245,12 +246,20 @@ top_srcdir = @top_srcdir@
 
 # we do not use GNU-style files: NEWS README AUTHORS ChangeLog
 AUTOMAKE_OPTIONS = foreign
+
+#SUBDIRS = pairwise fileInput tree/UPGMA tree  interface substitutionMatrix multipleAlign general alignment
 SUBDIRS = 
 clustalw2_SOURCES = ./pairwise/PairwiseAlignBase.h \
  ./pairwise/FastPairwiseAlign.h \
  ./pairwise/FullPairwiseAlign.cpp \
  ./pairwise/FullPairwiseAlign.h \
  ./pairwise/FastPairwiseAlign.cpp \
+ ./pairwise/I_ExtendData.h \
+ ./pairwise/I_ExtendData.cpp \
+ ./pairwise/I_MMAlgo.h \
+ ./pairwise/I_MMAlgo.cpp \
+ ./pairwise/I_SWAlgo.h \
+ ./pairwise/I_SWAlgo.cpp \
  ./fileInput/FileParser.h \
  ./fileInput/EMBLFileParser.h \
  ./fileInput/MSFFileParser.cpp \
@@ -485,6 +494,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/FullPairwiseAlign.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/GDEFileParser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Help.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/I_ExtendData.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/I_MMAlgo.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/I_SWAlgo.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/InFileStream.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/InteractiveMenu.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/InvalidCombination.Po@am__quote@
@@ -561,6 +573,48 @@ FastPairwiseAlign.obj: ./pairwise/FastPairwiseAlign.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='./pairwise/FastPairwiseAlign.cpp' object='FastPairwiseAlign.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o FastPairwiseAlign.obj `if test -f './pairwise/FastPairwiseAlign.cpp'; then $(CYGPATH_W) './pairwise/FastPairwiseAlign.cpp'; else $(CYGPATH_W) '$(srcdir)/./pairwise/FastPairwiseAlign.cpp'; fi`
+
+I_ExtendData.o: ./pairwise/I_ExtendData.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT I_ExtendData.o -MD -MP -MF $(DEPDIR)/I_ExtendData.Tpo -c -o I_ExtendData.o `test -f './pairwise/I_ExtendData.cpp' || echo '$(srcdir)/'`./pairwise/I_ExtendData.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/I_ExtendData.Tpo $(DEPDIR)/I_ExtendData.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='./pairwise/I_ExtendData.cpp' object='I_ExtendData.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o I_ExtendData.o `test -f './pairwise/I_ExtendData.cpp' || echo '$(srcdir)/'`./pairwise/I_ExtendData.cpp
+
+I_ExtendData.obj: ./pairwise/I_ExtendData.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT I_ExtendData.obj -MD -MP -MF $(DEPDIR)/I_ExtendData.Tpo -c -o I_ExtendData.obj `if test -f './pairwise/I_ExtendData.cpp'; then $(CYGPATH_W) './pairwise/I_ExtendData.cpp'; else $(CYGPATH_W) '$(srcdir)/./pairwise/I_ExtendData.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/I_ExtendData.Tpo $(DEPDIR)/I_ExtendData.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='./pairwise/I_ExtendData.cpp' object='I_ExtendData.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o I_ExtendData.obj `if test -f './pairwise/I_ExtendData.cpp'; then $(CYGPATH_W) './pairwise/I_ExtendData.cpp'; else $(CYGPATH_W) '$(srcdir)/./pairwise/I_ExtendData.cpp'; fi`
+
+I_MMAlgo.o: ./pairwise/I_MMAlgo.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT I_MMAlgo.o -MD -MP -MF $(DEPDIR)/I_MMAlgo.Tpo -c -o I_MMAlgo.o `test -f './pairwise/I_MMAlgo.cpp' || echo '$(srcdir)/'`./pairwise/I_MMAlgo.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/I_MMAlgo.Tpo $(DEPDIR)/I_MMAlgo.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='./pairwise/I_MMAlgo.cpp' object='I_MMAlgo.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o I_MMAlgo.o `test -f './pairwise/I_MMAlgo.cpp' || echo '$(srcdir)/'`./pairwise/I_MMAlgo.cpp
+
+I_MMAlgo.obj: ./pairwise/I_MMAlgo.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT I_MMAlgo.obj -MD -MP -MF $(DEPDIR)/I_MMAlgo.Tpo -c -o I_MMAlgo.obj `if test -f './pairwise/I_MMAlgo.cpp'; then $(CYGPATH_W) './pairwise/I_MMAlgo.cpp'; else $(CYGPATH_W) '$(srcdir)/./pairwise/I_MMAlgo.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/I_MMAlgo.Tpo $(DEPDIR)/I_MMAlgo.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='./pairwise/I_MMAlgo.cpp' object='I_MMAlgo.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o I_MMAlgo.obj `if test -f './pairwise/I_MMAlgo.cpp'; then $(CYGPATH_W) './pairwise/I_MMAlgo.cpp'; else $(CYGPATH_W) '$(srcdir)/./pairwise/I_MMAlgo.cpp'; fi`
+
+I_SWAlgo.o: ./pairwise/I_SWAlgo.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT I_SWAlgo.o -MD -MP -MF $(DEPDIR)/I_SWAlgo.Tpo -c -o I_SWAlgo.o `test -f './pairwise/I_SWAlgo.cpp' || echo '$(srcdir)/'`./pairwise/I_SWAlgo.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/I_SWAlgo.Tpo $(DEPDIR)/I_SWAlgo.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='./pairwise/I_SWAlgo.cpp' object='I_SWAlgo.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o I_SWAlgo.o `test -f './pairwise/I_SWAlgo.cpp' || echo '$(srcdir)/'`./pairwise/I_SWAlgo.cpp
+
+I_SWAlgo.obj: ./pairwise/I_SWAlgo.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT I_SWAlgo.obj -MD -MP -MF $(DEPDIR)/I_SWAlgo.Tpo -c -o I_SWAlgo.obj `if test -f './pairwise/I_SWAlgo.cpp'; then $(CYGPATH_W) './pairwise/I_SWAlgo.cpp'; else $(CYGPATH_W) '$(srcdir)/./pairwise/I_SWAlgo.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/I_SWAlgo.Tpo $(DEPDIR)/I_SWAlgo.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='./pairwise/I_SWAlgo.cpp' object='I_SWAlgo.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o I_SWAlgo.obj `if test -f './pairwise/I_SWAlgo.cpp'; then $(CYGPATH_W) './pairwise/I_SWAlgo.cpp'; else $(CYGPATH_W) '$(srcdir)/./pairwise/I_SWAlgo.cpp'; fi`
 
 MSFFileParser.o: ./fileInput/MSFFileParser.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT MSFFileParser.o -MD -MP -MF $(DEPDIR)/MSFFileParser.Tpo -c -o MSFFileParser.o `test -f './fileInput/MSFFileParser.cpp' || echo '$(srcdir)/'`./fileInput/MSFFileParser.cpp
