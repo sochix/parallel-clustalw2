@@ -33,6 +33,7 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
     int res;
     double _score;
     
+    
     try
     {
         
@@ -85,16 +86,24 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
 						// Simplify loop vars for OMP
 						int initSj = utilityObject->MAX(si+1, jStart+1),
 						    boundSj = utilityObject->MIN(ExtendData::numSeqs,jEnd);
+						
+								
+						#pragma omp parallel for 	default(none) \
+																			num_threads(8) \
+																			shared(distMat, _ptrToSeqArray, alignPtr, userParameters, cout, utilityObject) \
+																			private(_score, sj, i, res, swalgo, mmalgo) \
+																			firstprivate(initSj, boundSj, n, m, len1, len2, si)    
 						for (sj = initSj; sj <  boundSj ; sj++)
             {
-                m = alignPtr->getSeqLength(sj + 1);
+            		m = alignPtr->getSeqLength(sj + 1);
                 if (n == 0 || m == 0)
                 {
-                    distMat->SetAt(si + 1, sj + 1, 1.0);
-                    distMat->SetAt(sj + 1, si + 1, 1.0);
+                		distMat->SetAt(si + 1, sj + 1, 1.0);
+		                distMat->SetAt(sj + 1, si + 1, 1.0);
                     continue;
                 }
                 len2 = 0;
+
                 for (i = 1; i <= m; i++)
                 {
                     res = (*_ptrToSeqArray)[sj + 1][i];
@@ -103,28 +112,29 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
                         len2++;
                     }
                 }
-								ExtendData::UpdateGapOpenAndExtend(_gapOpen, _gapExtend, n, m);
+                
+               	ExtendData::UpdateGapOpenAndExtend(_gapOpen, _gapExtend, n, m);
                 // align the sequences
             
-                seq1 = si + 1;
+            		seq1 = si + 1;
                 seq2 = sj + 1;
 
                 _ptrToSeq1 = alignPtr->getSequence(seq1);
                 _ptrToSeq2 = alignPtr->getSequence(seq2);
-            
+ 
             		swalgo.Pass(_ptrToSeq1, _ptrToSeq2, n, m, _gapOpen, _gapExtend);
             
-   	            // use Myers and Miller to align two sequences 
-
-								
-								maxScore = mmalgo.Pass(swalgo.sb1 - 1, swalgo.sb2 - 1, swalgo.se1 - swalgo.sb1 + 1, swalgo.se2 - swalgo.sb2 + 1,
+            		// use Myers and Miller to align two sequences 
+							 #pragma omp single	
+							 {	
+								   maxScore = mmalgo.Pass(swalgo.sb1 - 1, swalgo.sb2 - 1, swalgo.se1 - swalgo.sb1 + 1, swalgo.se2 - swalgo.sb2 + 1,
                     (int)0, (int)0, _ptrToSeq1, _ptrToSeq2, _gapOpen, _gapExtend);
-      
-                 // calculate percentage residue identity
-
+     						}
+      				 // calculate percentage residue identity
                 mmScore = tracePath(swalgo.sb1, swalgo.sb2, mmalgo.displ, mmalgo.printPtr);
 
-                if (len1 == 0 || len2 == 0)
+
+							  if (len1 == 0 || len2 == 0)
                 {
                     mmScore = 0;
                 }
@@ -133,15 +143,19 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
                     mmScore /= (float)utilityObject->MIN(len1, len2);
                 }
 
-                _score = ((float)100.0 - mmScore) / (float)100.0;
-                distMat->SetAt(si + 1, sj + 1, _score);
-                distMat->SetAt(sj + 1, si + 1, _score);
-                
-                if(userParameters->getDisplayInfo())
-                {
-                    utilityObject->info("Sequences (%d:%d) Aligned. Score:  %d",
-                                        si+1, sj+1, (int)mmScore);     
+						    _score = ((float)100.0 - mmScore) / (float)100.0;
+		            distMat->SetAt(si + 1, sj + 1, _score);
+		            distMat->SetAt(sj + 1, si + 1, _score);
+		                       
+                 #pragma omp single
+                 {
+				            if(userParameters->getDisplayInfo())
+				            {
+				                utilityObject->info("Sequences (%d:%d) Aligned. Score:  %d",
+				                                    si+1, sj+1, (int)mmScore);     
+				            }
                 }
+               
             }
         }
         double endTime = omp_get_wtime() - startTime;
@@ -206,7 +220,7 @@ float FullPairwiseAlign::tracePath(int tsb1, int tsb2, vector<int>& displ, int p
 
 
 
-
+/*
 int FullPairwiseAlign::gap(int k)
 {
     if(k <= 0)
@@ -218,6 +232,6 @@ int FullPairwiseAlign::gap(int k)
         return _gapOpen + _gapExtend * k;
     }
 }
-
+*/
 
 }
