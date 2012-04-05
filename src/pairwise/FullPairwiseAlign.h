@@ -28,13 +28,13 @@ class FullPairwiseAlign : public PairwiseAlignBase
     private:
         /* Functions */
        
-        float tracePath(int tsb1, int tsb2, vector<int>&, int );       
+        float tracePath(int tsb1, int tsb2, const vector<int>&, int, const vector<int>*, const vector<int>* );       
        // int gap(int k);
         
         /* Attributes */
         // I have constant pointers to the data. This allows for the fastest access.
-        const vector<int>* _ptrToSeq1;
-        const vector<int>* _ptrToSeq2;
+       // const vector<int>* _ptrToSeq1;
+        //const vector<int>* _ptrToSeq2;
         float mmScore;
  
         int _gapOpen; // scaled to be an integer, this is not a mistake

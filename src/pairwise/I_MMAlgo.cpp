@@ -63,7 +63,7 @@ int MMAlgo::diff(int A, int B, int M, int N, int tb, int te)
     int type;
     int midi, midj, i, j;
     int midh;
-    static int f, hh, e, s, t;
+  //  static int f, hh, e, s, t;
 
     if (N <= 0)
     {

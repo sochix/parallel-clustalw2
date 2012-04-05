@@ -36,6 +36,13 @@ class MMAlgo
       
       int _gapOpen;
       int _gapExtend;
+
+			//Moved from diff, where they were static
+      int f;
+      int hh;
+      int e;
+      int s;
+      int t;
       
 };
 
