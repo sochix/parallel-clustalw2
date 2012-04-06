@@ -110,7 +110,7 @@ AC_TYPE_SIZE_T
 # Andreas Wilm: standard would be config.h but let's avoid conflicts with 
 AM_CONFIG_HEADER(src/config.h) 
 
-AC_FUNC_MALLOC
+# AC_FUNC_MALLOC
 
 # enable hashing if requested (--with-mhash)
 # will set HAVE_MHASH_H only 

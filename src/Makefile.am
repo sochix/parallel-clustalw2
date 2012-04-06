@@ -5,7 +5,7 @@
 
 # we do not use GNU-style files: NEWS README AUTHORS ChangeLog
 AUTOMAKE_OPTIONS = foreign
-
+AM_CXXFLAGS = ../libs/libtcmalloc_minimal.so.0.0.0 -fopenmp
 #SUBDIRS = pairwise fileInput tree/UPGMA tree  interface substitutionMatrix multipleAlign general alignment
 
 SUBDIRS=
