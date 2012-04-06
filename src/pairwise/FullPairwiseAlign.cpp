@@ -78,6 +78,13 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
     		// Simplify loop vars for OMP
     		int initSi = utilityObject->MAX(0, iStart),
     				boundSi = utilityObject->MIN(ExtendData::numSeqs,iEnd);
+
+#pragma omp parallel for 	default(none) \
+											 		num_threads(16) \
+											    shared(distMat, _ptrToSeqArray, alignPtr, userParameters, utilityObject, jStart, jEnd) \
+											    private(_score, i, res, seq1, seq2, maxScore, mmScore,_ptrToSeq1, _ptrToSeq2, _gapExtend, _gapOpen , si, sj) \
+											    firstprivate(n, m, len1, len2, initSi, boundSi)  
+    		
     		for (si = initSi; si < boundSi; si++)
         {
             n = alignPtr->getSeqLength(si + 1);
@@ -94,13 +101,7 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
 						// Simplify loop vars for OMP
 						int initSj = utilityObject->MAX(si+1, jStart+1),
 						    boundSj = utilityObject->MIN(ExtendData::numSeqs,jEnd);
-			
-						
-					#pragma omp parallel for 	default(none) \
-																 		num_threads(8) \
-																    shared(distMat, _ptrToSeqArray, alignPtr, userParameters, utilityObject) \
-																    private(_score, sj, i, res, seq1, seq2, maxScore, mmScore,_ptrToSeq1, _ptrToSeq2, _gapExtend, _gapOpen) \
-																    firstprivate(initSj, boundSj, n, m, len1, len2, si)  
+
 						for (sj = initSj; sj <  boundSj ; sj++)
             {
             		m = alignPtr->getSeqLength(sj + 1);
