@@ -74,17 +74,17 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
        	const SeqArray* _ptrToSeqArray = alignPtr->getSeqArray(); //This is faster! 
     	 
     
-    		double startTime = omp_get_wtime();
+	  		double startTime = omp_get_wtime();
     		// Simplify loop vars for OMP
     		int initSi = utilityObject->MAX(0, iStart),
     				boundSi = utilityObject->MIN(ExtendData::numSeqs,iEnd);
 
 #pragma omp parallel for 	default(none) \
-											 		num_threads(16) \
+											 		num_threads(8) \
 											    shared(distMat, _ptrToSeqArray, alignPtr, userParameters, utilityObject, jStart, jEnd) \
 											    private(_score, i, res, seq1, seq2, maxScore, mmScore,_ptrToSeq1, _ptrToSeq2, _gapExtend, _gapOpen , si, sj) \
 											    firstprivate(n, m, len1, len2, initSi, boundSi)  
-    		
+   		
     		for (si = initSi; si < boundSi; si++)
         {
             n = alignPtr->getSeqLength(si + 1);
@@ -102,13 +102,18 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
 						int initSj = utilityObject->MAX(si+1, jStart+1),
 						    boundSj = utilityObject->MIN(ExtendData::numSeqs,jEnd);
 
+			//			#pragma omp parallel for 
+																	/*		shared(distMat, _ptrToSeqArray, alignPtr, userParameters, utilityObject, jStart, jEnd) \
+																			private(_score, i, res, seq1, seq2, maxScore, mmScore, _ptrToSeq1, _ptrToSeq2, _gapExtend, _gapOpen, si, sj) \
+																			firstprivate(n,m,boundSi,boundSj, initSj,initSi, len1, len2) */
+																	
 						for (sj = initSj; sj <  boundSj ; sj++)
             {
             		m = alignPtr->getSeqLength(sj + 1);
                 
                 if (n == 0 || m == 0)
                 {
-                	#pragma omp critical
+            //    	#pragma omp critical
                 	{
                 		distMat->SetAt(si + 1, sj + 1, 1.0);
 					       		distMat->SetAt(sj + 1, si + 1, 1.0);
@@ -156,13 +161,14 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
                 }
 
 						    _score = ((float)100.0 - mmScore) / (float)100.0;
-						    #pragma omp critical
+			//			    #pragma omp critical
 						    {
 						    
 						    	distMat->SetAt(si + 1, sj + 1, _score);
 				        	distMat->SetAt(sj + 1, si + 1, _score);
 				        }
-		                      
+		                     
+		             
                 #pragma omp critical
                  {
 				            if(userParameters->getDisplayInfo())
@@ -170,11 +176,11 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
 				                utilityObject->info("Sequences (%d:%d) Aligned. Score:  %d",
 				                                    si+1, sj+1, (int)mmScore);     
 				            }
-                }
+                }             
            }
        }
-        double endTime = omp_get_wtime() - startTime;
-        cout << endl << "[OMP] Elapsed time: " << endTime << " .sec" << endl;
+       double endTime = omp_get_wtime() - startTime;
+       cout << endl << "[OMP] Elapsed time: " << endTime << " .sec" << endl;
     }
     catch(const exception& e)
     {
