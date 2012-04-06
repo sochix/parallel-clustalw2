@@ -97,7 +97,7 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
 			
 						
 					#pragma omp parallel for 	default(none) \
-																 		num_threads(32) \
+																 		num_threads(8) \
 																    shared(distMat, _ptrToSeqArray, alignPtr, userParameters, utilityObject) \
 																    private(_score, sj, i, res, seq1, seq2, maxScore, mmScore,_ptrToSeq1, _ptrToSeq2, _gapExtend, _gapOpen) \
 																    firstprivate(initSj, boundSj, n, m, len1, len2, si)  
