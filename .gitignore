@@ -12,6 +12,9 @@
 /src/PfamTest.dnd
 /log.txt
 
+#Ignore Automake Cache files
+/autom4te.cache/
+
 #Ignore config files
 /src/.deps/
 /Makefile
