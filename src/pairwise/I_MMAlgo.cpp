@@ -40,12 +40,12 @@ int MMAlgo::Pass(int sb1, int sb2, int len1, int len2, int tb, int te, const vec
 		
 }
 
-inline int MMAlgo::calcScore(int iat, int jat, int v1, int v2)
+inline int MMAlgo::calcScore(int i, int j, int sb1, int sb2)
 {
-    return ExtendData::matrix[(*_ptrToSeq1)[v1 + iat]][(*_ptrToSeq2)[v2 + jat]];
+    return ExtendData::matrix[(*_ptrToSeq1)[sb1 + i]][(*_ptrToSeq2)[sb2 + j]];
 }
 
-void MMAlgo::add(int v)
+void MMAlgo::addToDisplay(int v)
 {
     if (lastPrint < 0)
     {
@@ -69,7 +69,7 @@ int MMAlgo::diff(int sb1, int sb2, int len1, int len2, int tb, int te)
     {
         if (len1 > 0)
         {
-            del(len1);
+            delFromDisplay(len1);
         }
 
         return ( -(int)tbgap(len1, tb));
@@ -79,7 +79,7 @@ int MMAlgo::diff(int sb1, int sb2, int len1, int len2, int tb, int te)
     {
         if (len1 <= 0)
         {
-            add(len2);
+            addToDisplay(len2);
             return ( -(int)tbgap(len2, tb));
         }
 
@@ -102,19 +102,19 @@ int MMAlgo::diff(int sb1, int sb2, int len1, int len2, int tb, int te)
 
         if (midj == 0)
         {
-            del(1);
-            add(len2);
+            delFromDisplay(1);
+            addToDisplay(len2);
         }
         else
         {
             if (midj > 1)
             {
-                add(midj - 1);
+                addToDisplay(midj - 1);
             }
             displ[printPtr++] = lastPrint = 0;
             if (midj < len2)
             {
-                add(len2 - midj);
+                addToDisplay(len2 - midj);
             }
         }
         return midh;
@@ -247,14 +247,14 @@ int MMAlgo::diff(int sb1, int sb2, int len1, int len2, int tb, int te)
     else
     {
         diff(sb1, sb2, midi - 1, midj, tb, 0);
-        del(2);
+        delFromDisplay(2);
         diff(sb1 + midi + 1, sb2 + midj, len1 - midi - 1, len2 - midj, 0, te);
     }
 
     return midh; // Return the score of the best alignment
 }
 
-void MMAlgo::del(int k)
+void MMAlgo::delFromDisplay(int k)
 {
     if (lastPrint < 0)
     {
