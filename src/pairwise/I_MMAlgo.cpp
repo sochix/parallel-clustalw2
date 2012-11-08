@@ -62,7 +62,7 @@ int MMAlgo::diff(int sb1, int sb2, int len1, int len2, int tb, int te)
 {
     int midi, midj, i, j;
     int midh;
-  //  static int f, hh, e, s, t; //Moved to private memebers of class MMAlgo
+    int f, hh, e, s, t; 
 
     if (len2 <= 0)
     {
@@ -124,8 +124,6 @@ int MMAlgo::diff(int sb1, int sb2, int len1, int len2, int tb, int te)
     forwardPass(sb1, sb2, len1, len2, tb, midi);
     backwardPass(sb1, sb2, len1, len2, te, midi);
 
-    
-
     midh = HH[0] + RR[0];
     midj = 0;
     type_t type = TYPE_1;
@@ -151,9 +149,7 @@ int MMAlgo::diff(int sb1, int sb2, int len1, int len2, int tb, int te)
         }
     }
 
-    // Conquer recursively around midpoint 
-
-
+    // Conquer recursively around midpoint
     if (type == TYPE_1)
     {
         // Type 1 gaps
@@ -255,7 +251,7 @@ void MMAlgo::forwardPass(int sb1, int sb2, int len1, int len2, int tb, int midi)
 void MMAlgo::backwardPass(int sb1, int sb2, int len1, int len2, int te, int midi) 
 {
     int t = -te, 
-        hh, f, e;
+        hh, f, e, s;
 
     RR[len2] = 0;
 

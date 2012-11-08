@@ -55,11 +55,11 @@ private:
       int _gapExtend;
 
 	//Moved from diff, where they were static
-      int f;
+   /*   int f;
       int hh;
       int e;
       int s;
-      int t;
+      int t;*/
       
 };
 
