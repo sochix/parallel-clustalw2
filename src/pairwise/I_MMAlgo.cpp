@@ -122,51 +122,9 @@ int MMAlgo::diff(int sb1, int sb2, int len1, int len2, int tb, int te)
     // Divide: Find optimum midpoint (midi,midj) of cost midh
     midi = len1 / 2;
     forwardPass(sb1, sb2, len1, len2, tb, midi);
+    backwardPass(sb1, sb2, len1, len2, te, midi);
 
-    RR[len2] = 0;
-    t =  - te;
-    for (j = len2 - 1; j >= 0; j--)
-    {
-        RR[j] = t = t - _gapExtend;
-        SS[j] = t - _gapOpen;
-    }
-
-    t =  - te;
-    for (i = len1 - 1; i >= midi; i--)
-    {
-        s = RR[len2];
-        RR[len2] = hh = t = t - _gapExtend;
-        f = t - _gapOpen;
-
-        for (j = len2 - 1; j >= 0; j--)
-        {
-
-            if ((hh = hh - _gapOpen - _gapExtend) > (f = f - _gapExtend))
-            {
-                f = hh;
-            }
-            if ((hh = RR[j] - _gapOpen - _gapExtend) > (e = SS[j] - _gapExtend))
-            {
-                e = hh;
-            }
-            hh = s + calcScore(i + 1, j + 1, sb1, sb2);
-            if (f > hh)
-            {
-                hh = f;
-            }
-            if (e > hh)
-            {
-                hh = e;
-            }
-
-            s = RR[j];
-            RR[j] = hh;
-            SS[j] = e;
-
-        }
-    }
-
-    SS[len2] = RR[len2];
+    
 
     midh = HH[0] + RR[0];
     midj = 0;
@@ -291,5 +249,56 @@ void MMAlgo::forwardPass(int sb1, int sb2, int len1, int len2, int tb, int midi)
         }
     }
     DD[0] = HH[0];
+    return;
+}
+
+void MMAlgo::backwardPass(int sb1, int sb2, int len1, int len2, int te, int midi) 
+{
+    int t = -te, 
+        hh, f, e;
+
+    RR[len2] = 0;
+
+    for (int j = len2 - 1; j >= 0; j--)
+    {
+        RR[j] = t = t - _gapExtend;
+        SS[j] = t - _gapOpen;
+    }
+
+    t =  - te;
+    for (int i = len1 - 1; i >= midi; i--)
+    {
+        s = RR[len2];
+        RR[len2] = hh = t = t - _gapExtend;
+        f = t - _gapOpen;
+
+        for (int j = len2 - 1; j >= 0; j--)
+        {
+
+            if ((hh = hh - _gapOpen - _gapExtend) > (f = f - _gapExtend))
+            {
+                f = hh;
+            }
+            if ((hh = RR[j] - _gapOpen - _gapExtend) > (e = SS[j] - _gapExtend))
+            {
+                e = hh;
+            }
+            hh = s + calcScore(i + 1, j + 1, sb1, sb2);
+            if (f > hh)
+            {
+                hh = f;
+            }
+            if (e > hh)
+            {
+                hh = e;
+            }
+
+            s = RR[j];
+            RR[j] = hh;
+            SS[j] = e;
+        }
+    }
+
+    SS[len2] = RR[len2];
     return;
 }

@@ -36,7 +36,7 @@ private:
       int calcScore(int iat, int jat, int v1, int v2); 
       int gapAffineFunction(int k, int t);
       void forwardPass(int, int, int, int, int, int);
-      void backwardPass(int, int, int);
+      void backwardPass(int, int, int, int, int, int);
 
       //for legacy
       int tbgap(int k, int tb);
