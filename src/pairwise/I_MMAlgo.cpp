@@ -120,49 +120,8 @@ int MMAlgo::diff(int sb1, int sb2, int len1, int len2, int tb, int te)
     }
 
     // Divide: Find optimum midpoint (midi,midj) of cost midh
-
     midi = len1 / 2;
-    HH[0] = 0;
-    t =  - tb;
-    for (j = 1; j <= len2; j++)
-    {
-        HH[j] = t = t - _gapExtend;
-        DD[j] = t - _gapOpen;
-    }
-
-    t =  - tb;
-    for (i = 1; i <= midi; i++)
-    {
-        s = HH[0];
-        HH[0] = hh = t = t - _gapExtend;
-        f = t - _gapOpen;
-        for (j = 1; j <= len2; j++)
-        {
-            if ((hh = hh - _gapOpen - _gapExtend) > (f = f - _gapExtend))
-            {
-                f = hh;
-            }
-            if ((hh = HH[j] - _gapOpen - _gapExtend) > (e = DD[j] - _gapExtend))
-            {
-                e = hh;
-            }
-            hh = s + calcScore(i, j, sb1, sb2);
-            if (f > hh)
-            {
-                hh = f;
-            }
-            if (e > hh)
-            {
-                hh = e;
-            }
-
-            s = HH[j];
-            HH[j] = hh;
-            DD[j] = e;
-        }
-    }
-
-    DD[0] = HH[0];
+    forwardPass(sb1, sb2, len1, len2, tb, midi);
 
     RR[len2] = 0;
     t =  - te;
@@ -211,7 +170,7 @@ int MMAlgo::diff(int sb1, int sb2, int len1, int len2, int tb, int te)
 
     midh = HH[0] + RR[0];
     midj = 0;
-    type_t type = GAP;
+    type_t type = TYPE_1;
     for (j = 0; j <= len2; j++)
     {
         hh = HH[j] + RR[j];
@@ -230,14 +189,14 @@ int MMAlgo::diff(int sb1, int sb2, int len1, int len2, int tb, int te)
         {
             midh = hh;
             midj = j;
-            type = OTHER;
+            type = TYPE_2;
         }
     }
 
     // Conquer recursively around midpoint 
 
 
-    if (type == GAP)
+    if (type == TYPE_1)
     {
         // Type 1 gaps
         diff(sb1, sb2, midi, midj, tb, _gapOpen);
@@ -285,4 +244,52 @@ int MMAlgo::tbgap(int k, int tb)
 int MMAlgo::tegap(int k, int te)
 {
     return gapAffineFunction(k, te);
+}
+
+void MMAlgo::forwardPass(int sb1, int sb2, int len1, int len2, int tb, int midi) 
+{
+    int t = -tb, 
+        s, hh, f, e;
+
+    HH[0] = 0;
+    
+    for (int j = 1; j <= len2; j++)
+    {
+        HH[j] = t = t - _gapExtend;
+        DD[j] = t - _gapOpen;
+    }
+
+    t =  - tb;
+    for (int i = 1; i <= midi; i++)
+    {
+        s = HH[0];
+        HH[0] = hh = t = t - _gapExtend;
+        f = t - _gapOpen;
+        for (int j = 1; j <= len2; j++)
+        {
+            if ((hh = hh - _gapOpen - _gapExtend) > (f = f - _gapExtend))
+            {
+                f = hh;
+            }
+            if ((hh = HH[j] - _gapOpen - _gapExtend) > (e = DD[j] - _gapExtend))
+            {
+                e = hh;
+            }
+            hh = s + calcScore(i, j, sb1, sb2);
+            if (f > hh)
+            {
+                hh = f;
+            }
+            if (e > hh)
+            {
+                hh = e;
+            }
+
+            s = HH[j];
+            HH[j] = hh;
+            DD[j] = e;
+        }
+    }
+    DD[0] = HH[0];
+    return;
 }
