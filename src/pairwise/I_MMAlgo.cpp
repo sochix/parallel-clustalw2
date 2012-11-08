@@ -60,10 +60,9 @@ void MMAlgo::addToDisplay(int v)
 
 int MMAlgo::diff(int sb1, int sb2, int len1, int len2, int tb, int te)
 {
-    int type;
     int midi, midj, i, j;
     int midh;
-  //  static int f, hh, e, s, t;
+  //  static int f, hh, e, s, t; //Moved to private memebers of class MMAlgo
 
     if (len2 <= 0)
     {
@@ -212,7 +211,7 @@ int MMAlgo::diff(int sb1, int sb2, int len1, int len2, int tb, int te)
 
     midh = HH[0] + RR[0];
     midj = 0;
-    type = 1;
+    type_t type = GAP;
     for (j = 0; j <= len2; j++)
     {
         hh = HH[j] + RR[j];
@@ -231,14 +230,14 @@ int MMAlgo::diff(int sb1, int sb2, int len1, int len2, int tb, int te)
         {
             midh = hh;
             midj = j;
-            type = 2;
+            type = OTHER;
         }
     }
 
     // Conquer recursively around midpoint 
 
 
-    if (type == 1)
+    if (type == GAP)
     {
         // Type 1 gaps
         diff(sb1, sb2, midi, midj, tb, _gapOpen);
@@ -266,7 +265,7 @@ void MMAlgo::delFromDisplay(int k)
     }
 }
 
-int MMAlgo::tbgap(int k, int tb)
+int MMAlgo::gapAffineFunction(int k, int t) 
 {
     if(k <= 0)
     {
@@ -274,18 +273,16 @@ int MMAlgo::tbgap(int k, int tb)
     }
     else
     {
-        return tb + _gapExtend * k;
+        return t + _gapExtend * k;
     }
+}
+
+int MMAlgo::tbgap(int k, int tb)
+{
+    return gapAffineFunction(k, tb);
 }
 
 int MMAlgo::tegap(int k, int te)
 {
-    if(k <= 0)
-    {
-        return 0;
-    }
-    else
-    {
-        return te + _gapExtend * k;
-    }
+    return gapAffineFunction(k, te);
 }

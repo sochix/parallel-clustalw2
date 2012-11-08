@@ -18,10 +18,14 @@ public:
 	vector<int> displ;
 	
 private:
+      enum type_t {GAP, OTHER};
 	int diff(int, int, int, int, int, int);
       void addToDisplay(int);
       void delFromDisplay(int);
       int calcScore(int iat, int jat, int v1, int v2); 
+      int gapAffineFunction(int k, int t);
+
+      //for legacy
       int tbgap(int k, int tb);
       int tegap(int k, int te);
       
