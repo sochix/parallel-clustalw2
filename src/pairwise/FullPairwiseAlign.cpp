@@ -9,6 +9,7 @@
 #include "FullPairwiseAlign.h"
 #include <math.h>
 #include <omp.h>
+ #include <mpi.h>
 
 namespace clustalw
 {
