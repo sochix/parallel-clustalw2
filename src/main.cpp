@@ -41,8 +41,6 @@ int main(int argc, char **argv)
     resources->setPathToExecutable(string(argv[0]));
     userParameters->setDisplayInfo(true);
 
-
-    
     //userParameters->setDebug(5);       
     #if DEBUGFULL    
         if(DEBUGLOG)
@@ -84,7 +82,9 @@ int main(int argc, char **argv)
     delete userParameters;
     delete utilityObject;
     delete subMatrix;
-    
+    delete statsObject;
+
+
     if(logObject)
     {
         delete logObject;
