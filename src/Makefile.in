@@ -246,7 +246,7 @@ top_srcdir = @top_srcdir@
 
 # we do not use GNU-style files: NEWS README AUTHORS ChangeLog
 AUTOMAKE_OPTIONS = foreign
-AM_CXXFLAGS = /usr/lib/libtcmalloc_minimal.so.0.0.0 -fopenmp
+AM_CXXFLAGS = /usr/lib/libtcmalloc_minimal.so.0.0.0 -fopenmp -I /usr/lib/openmpi/include/
 #SUBDIRS = pairwise fileInput tree/UPGMA tree  interface substitutionMatrix multipleAlign general alignment
 SUBDIRS = 
 clustalw2_SOURCES = ./pairwise/PairwiseAlignBase.h \

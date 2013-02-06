@@ -1,13 +1,17 @@
-Please see also ftp://ftp.ebi.ac.uk/pub/software/clustalw2/README
-and http://www.clustal.org/
-
 HOWTO COMPILE THE SOURCE AND INSTALL
 ----------------------------------------------------------------------
 
 You will need a Unix environment with a working C++ compiler to
-compile the ClustalW source. We recommened GCC>=4.2. ICC users
-need to configure the package as follows:
+compile the parallel_ClustalW source. We recommened GCC>=4.2. 
+Also you need an installed tc-malloc library, path can be specified at src/Makefile.am
+Then run autoreconf.
+
+ICC users need to configure the package as follows:
 ./configure CXX=icpc
+
+Open MPI users need to configure the package as follows:
+./configure CXX=mpicxx
+
 
 For compilation under Windows you will probably need to install
 mingw and cygwin.

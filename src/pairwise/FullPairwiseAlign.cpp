@@ -73,20 +73,33 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
         }
            
        	const SeqArray* _ptrToSeqArray = alignPtr->getSeqArray(); //This is faster! 
-    	 
+        
+        MPI_Init(0, NULL);	 
     
-	  		double startTime = omp_get_wtime();
-    		// Simplify loop vars for OMP
-    		int initSi = utilityObject->MAX(0, iStart),
-    				boundSi = utilityObject->MIN(ExtendData::numSeqs,iEnd);
+        int myrank;
 
-#pragma omp parallel for 	default(none) \
-											 		num_threads(8) \
-											    shared(_ptrToSeqArray, distMat, alignPtr, userParameters, utilityObject, jStart, jEnd) \
-											    private(_score, i, res, seq1, seq2, maxScore, mmScore,_ptrToSeq1, _ptrToSeq2, _gapExtend, _gapOpen , si, sj, len1, len2, m, n) \
-											    firstprivate(initSi, boundSi)  
-   		
-    		for (si = initSi; si < boundSi; si++)
+        MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+        
+        if (myrank == 0) {
+        
+        cout << "Hello I'm master! My rank is 0"<< endl;
+        
+        } else {
+        
+        cout << "Hello I'm slave!  My rank is "<< myrank << endl;
+        
+        }
+        // Simplify loop vars for OMP
+    	int initSi = utilityObject->MAX(0, iStart),
+    		boundSi = utilityObject->MIN(ExtendData::numSeqs,iEnd);
+
+// #pragma omp parallel for 	default(none) \
+// 											 		num_threads(8) \
+// 											    shared(_ptrToSeqArray, distMat, alignPtr, userParameters, utilityObject, jStart, jEnd) \
+// 											    private(_score, i, res, seq1, seq2, maxScore, mmScore,_ptrToSeq1, _ptrToSeq2, _gapExtend, _gapOpen , si, sj, len1, len2, m, n) \
+// 											    firstprivate(initSi, boundSi)  
+ 		
+   		for (si = initSi; si < boundSi; si++)
         {
             n = alignPtr->getSeqLength(si + 1);
             len1 = 0;
@@ -99,27 +112,20 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
                 }
             }
 						
-						// Simplify loop vars for OMP
-						int initSj = utilityObject->MAX(si+1, jStart+1),
-						    boundSj = utilityObject->MIN(ExtendData::numSeqs,jEnd);
-
-			//			#pragma omp parallel for 
-																	/*		shared(distMat, _ptrToSeqArray, alignPtr, userParameters, utilityObject, jStart, jEnd) \
-																			private(_score, i, res, seq1, seq2, maxScore, mmScore, _ptrToSeq1, _ptrToSeq2, _gapExtend, _gapOpen, si, sj) \
-																			firstprivate(n,m,boundSi,boundSj, initSj,initSi, len1, len2) */
+			// Simplify loop vars for OMP
+			int initSj = utilityObject->MAX(si+1, jStart+1),
+			    boundSj = utilityObject->MIN(ExtendData::numSeqs,jEnd);
 																	
-						for (sj = initSj; sj <  boundSj ; sj++)
+			for (sj = initSj; sj <  boundSj ; sj++)
             {
             		m = alignPtr->getSeqLength(sj + 1);
                 
                 if (n == 0 || m == 0)
                 {
-            //    	#pragma omp critical
-                	{
-                		distMat->SetAt(si + 1, sj + 1, 1.0);
-					       		distMat->SetAt(sj + 1, si + 1, 1.0);
-					       	}
-		              continue;
+
+               		distMat->SetAt(si + 1, sj + 1, 1.0);
+		       		distMat->SetAt(sj + 1, si + 1, 1.0);
+    	            continue;
                 }
                 len2 = 0;
 
@@ -133,26 +139,25 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
                 }
                 
                	ExtendData::UpdateGapOpenAndExtend(_gapOpen, _gapExtend, n, m);
+                
                 // align the sequences
-            
-            		seq1 = si + 1;
+            	seq1 = si + 1;
                 seq2 = sj + 1;
 
                 _ptrToSeq1 = alignPtr->getSequence(seq1);
                 _ptrToSeq2 = alignPtr->getSequence(seq2);
  
- 				   	 			SWAlgo swalgo;
-									MMAlgo mmalgo;
-            	 		swalgo.Pass(_ptrToSeq1, _ptrToSeq2, n, m, _gapOpen, _gapExtend);
+ 				SWAlgo swalgo;
+				MMAlgo mmalgo;
+            	swalgo.Pass(_ptrToSeq1, _ptrToSeq2, n, m, _gapOpen, _gapExtend);
                                  
             	//use Myers and Miller to align two sequences 
-							 	maxScore = mmalgo.Pass(swalgo.sb1 - 1, swalgo.sb2 - 1, swalgo.se1 - swalgo.sb1 + 1, swalgo.se2 - swalgo.sb2 + 1,
-          	         (int)0, (int)0, _ptrToSeq1, _ptrToSeq2, _gapOpen, _gapExtend);			               
+			 	maxScore = mmalgo.Pass(swalgo.sb1 - 1, swalgo.sb2 - 1, swalgo.se1 - swalgo.sb1 + 1, swalgo.se2 - swalgo.sb2 + 1,
+          	                             (int)0, (int)0, _ptrToSeq1, _ptrToSeq2, _gapOpen, _gapExtend);			               
             	 // calculate percentage residue identity
                 mmScore = tracePath(swalgo.sb1, swalgo.sb2, mmalgo.displ, mmalgo.printPtr, _ptrToSeq1, _ptrToSeq2);
 
-
-							  if (len1 == 0 || len2 == 0)
+    			if (len1 == 0 || len2 == 0)
                 {
                     mmScore = 0;
                 }
@@ -161,27 +166,24 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
                     mmScore /= (float)utilityObject->MIN(len1, len2);
                 }
 
-						    _score = ((float)100.0 - mmScore) / (float)100.0;
-			//			    #pragma omp critical
-						    {
-						    
-						    	distMat->SetAt(si + 1, sj + 1, _score);
-				        	distMat->SetAt(sj + 1, si + 1, _score);
-				        }
-		                     
+				_score = ((float)100.0 - mmScore) / (float)100.0;
+				{
+				   	distMat->SetAt(si + 1, sj + 1, _score);
+		        	distMat->SetAt(sj + 1, si + 1, _score);
+		        }
 		             
                 #pragma omp critical
-                 {
-				            if(userParameters->getDisplayInfo())
-				            {
-				                utilityObject->info("Sequences (%d:%d) Aligned. Score:  %d",
-				                                    si+1, sj+1, (int)mmScore);     
-				            }
+                {
+		            if(userParameters->getDisplayInfo())
+		            {
+		                utilityObject->info("Sequences (%d:%d) Aligned. Score:  %d",
+    		                                    si+1, sj+1, (int)mmScore);     
+		            }
                 }             
            }
        }
-       double endTime = omp_get_wtime() - startTime;
-       cout << endl << "[OMP] Elapsed time: " << endTime << " .sec" << endl;
+    
+       MPI_Finalize();
     }
     catch(const exception& e)
     {
