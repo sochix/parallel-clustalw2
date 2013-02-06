@@ -43,7 +43,7 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
  
     int seq1 = seq1;
     int seq2 = seq2;
- 		int maxScore = maxScore;
+ 	int maxScore = maxScore;
     
     try
     {
@@ -74,13 +74,27 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
            
        	const SeqArray* _ptrToSeqArray = alignPtr->getSeqArray(); //This is faster! 
         
-        MPI_Init(0, NULL);	 
+        // Simplify loop vars for OMP
+    	int initSi = utilityObject->MAX(0, iStart),
+    		boundSi = utilityObject->MIN(ExtendData::numSeqs,iEnd);
+
+        int portionPerProc = 0;
+        //Keep in mind that num of procs is power of 2
+        if ((boundSi - initSi) % 2 == 0 ) {
+            portionPerProc = (boundSi - initSi) / 2;
+        }
+        else {
+            cerr << "Can't properly divide work between procs!" << endl;
+            return;
+        }
+
+        MPI_Init(0, NULL);  
     
         int myrank;
 
         MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
         
-        if (myrank == 0) {
+        /*if (myrank == 0) {
         
         cout << "Hello I'm master! My rank is 0"<< endl;
         
@@ -88,20 +102,17 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
         
         cout << "Hello I'm slave!  My rank is "<< myrank << endl;
         
-        }
-        // Simplify loop vars for OMP
-    	int initSi = utilityObject->MAX(0, iStart),
-    		boundSi = utilityObject->MIN(ExtendData::numSeqs,iEnd);
+        }*/
 
-// #pragma omp parallel for 	default(none) \
-// 											 		num_threads(8) \
-// 											    shared(_ptrToSeqArray, distMat, alignPtr, userParameters, utilityObject, jStart, jEnd) \
-// 											    private(_score, i, res, seq1, seq2, maxScore, mmScore,_ptrToSeq1, _ptrToSeq2, _gapExtend, _gapOpen , si, sj, len1, len2, m, n) \
-// 											    firstprivate(initSi, boundSi)  
- 		
-   		for (si = initSi; si < boundSi; si++)
+        int startIdx    = myrank * portionPerProc,
+            endIdx      = startIdx + portionPerProc;          
+
+        cout    << "My rank is #" << myrank << endl
+                << "startIdx: " << startIdx << "; endIdx: " << endIdx << endl;
+        
+   		for (si = startIdx; si < endIdx; si++)
         {
-            n = alignPtr->getSeqLength(si + 1);
+            /*n = alignPtr->getSeqLength(si + 1);
             len1 = 0;
             for (i = 1; i <= n; i++)
             {
@@ -118,7 +129,7 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
 																	
 			for (sj = initSj; sj <  boundSj ; sj++)
             {
-            		m = alignPtr->getSeqLength(sj + 1);
+            	m = alignPtr->getSeqLength(sj + 1);
                 
                 if (n == 0 || m == 0)
                 {
@@ -171,16 +182,18 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
 				   	distMat->SetAt(si + 1, sj + 1, _score);
 		        	distMat->SetAt(sj + 1, si + 1, _score);
 		        }
-		             
-                #pragma omp critical
-                {
-		            if(userParameters->getDisplayInfo())
-		            {
-		                utilityObject->info("Sequences (%d:%d) Aligned. Score:  %d",
-    		                                    si+1, sj+1, (int)mmScore);     
-		            }
-                }             
-           }
+
+            //TODO: please uncomment me later!	
+
+              //   #pragma omp critical
+              //   {
+		            // if(userParameters->getDisplayInfo())
+		            // {
+		            //     utilityObject->info("Sequences (%d:%d) Aligned. Score:  %d",
+    		        //                             si+1, sj+1, (int)mmScore);     
+		            // }
+              //   }             
+           }*/
        }
     
        MPI_Finalize();
