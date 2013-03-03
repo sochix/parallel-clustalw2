@@ -19,6 +19,7 @@
 /autom4te.cache/
 
 #Ignore config files
+/src/Makefile.in
 /src/.deps/
 /Makefile
 /config.log
