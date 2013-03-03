@@ -12,20 +12,21 @@
 #define __MMALGO_H__
 
 #include "PairwiseAlignBase.h"
-#include "I_ExtendData.h"
+#include "../parallel/ParallelAlgo.h"
 
 namespace clustalw {
 
 class MMAlgo
 {
 public:
-	MMAlgo();
+	MMAlgo(ExternalData*);
 	~MMAlgo();
 	int Pass(int, int, int, int, int, int, const vector<int>*, const vector<int>*, const int, const int);
 
 	//FIXME: must be in private
 	int printPtr;
 	vector<int> displ;
+      const ExternalData* data;
 	
 private:
       enum type_t {TYPE_1, TYPE_2};

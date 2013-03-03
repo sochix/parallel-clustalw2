@@ -29,7 +29,7 @@ class ExtendData
 		static void InitSubMatrixParameters(clustalw::SubMatrix* subMat);
 		static void InitUserParameters(clustalw::UserParameters* userParameters);
 		static void InitAlignmentParameters(clustalw::Alignment* alignPtr);
-		static void UpdateGapOpenAndExtend(int&, int&, int, int);
+		static void UpdateGapOpenAndExtend(int&, int&, int, int);	
 	
 	private:
 		ExtendData(const ExtendData&) {};

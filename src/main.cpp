@@ -7,6 +7,7 @@
     #include "config.h"
 #endif
 #include <iostream>
+#include <mpi.h>
 #include "alignment/Alignment.h"
 #include "alignment/Sequence.h"
 #include "general/clustalw.h"
@@ -20,6 +21,9 @@
 #include "general/ClustalWResources.h"
 #include "general/Stats.h"
 #include <ctime>
+#include "pairwise/I_ExtendData.h"
+#include "parallel/ParallelAlgo.h"
+
 namespace clustalw
 { 
     UserParameters* userParameters;
@@ -33,62 +37,82 @@ using namespace clustalw;
 
 int main(int argc, char **argv)
 {      
+    MPI_Init(&argc, &argv);  
+   
+    int r, ntasks;
+
+    MPI_Comm_rank(MPI_COMM_WORLD, &r);
+
     userParameters = new UserParameters(false);
-    utilityObject = new Utility();   
-    subMatrix = new SubMatrix();
-    statsObject = new Stats();
-    ClustalWResources *resources = ClustalWResources::Instance();
-    resources->setPathToExecutable(string(argv[0]));
-    userParameters->setDisplayInfo(true);
+    utilityObject = new Utility(); 
 
-
-    
-    //userParameters->setDebug(5);       
-    #if DEBUGFULL    
-        if(DEBUGLOG)
-        {
-            cout << "debugging is on\n\n\n";
-            logObject = new DebugLog("logfile.txt");
-            logObject->logMsg("Loggin is on!");
-        }
-    #endif
-
-    if (argc > 1)
-    {    
-        //time_t start, end;
-        //double dif;
-        //start = time (NULL);
-        //userParameters->setDisplayInfo(false);        
-        vector<string> args;
-        for (int i = 1; i < argc; ++i)
-        {
-            args.push_back(argv[i]);
-        }
-        CommandLineParser cmdLineParser(&args, false);
-        
-        if (statsObject->isEnabled())
-            statsObject->logCmdLine(argc,argv);
-        
-        //end = time (NULL);
-        //dif = difftime(end, start);
-        //cout << "It took " << dif << " seconds\n";
-    }
-    if (argc<=1 || userParameters->getInteractive())
+    if (r == 0)
     {
-        // FIXME: additional parameters like infile are ignored!
-        InteractiveMenu menu;
-        userParameters->setMenuFlag(true);
-        userParameters->setInteractive(true);
-        menu.mainMenu();
+        // userParameters = new UserParameters(false);
+        // utilityObject = new Utility();   
+        subMatrix = new SubMatrix();
+        statsObject = new Stats();
+        ClustalWResources *resources = ClustalWResources::Instance();
+        resources->setPathToExecutable(string(argv[0]));
+        userParameters->setDisplayInfo(true);
+       
+        //userParameters->setDebug(5);       
+        #if DEBUGFULL    
+            if(DEBUGLOG)
+            {
+                cout << "debugging is on\n\n\n";
+                logObject = new DebugLog("logfile.txt");
+                logObject->logMsg("Loggin is on!");
+            }
+        #endif
+
+        if (argc > 1)
+        {    
+            //time_t start, end;
+            //double dif;
+            //start = time (NULL);
+            //userParameters->setDisplayInfo(false);        
+            vector<string> args;
+            for (int i = 1; i < argc; ++i)
+            {
+                args.push_back(argv[i]);
+            }
+            CommandLineParser cmdLineParser(&args, false);
+            
+            if (statsObject->isEnabled())
+                statsObject->logCmdLine(argc,argv);
+            
+            //end = time (NULL);
+            //dif = difftime(end, start);
+            //cout << "It took " << dif << " seconds\n";
+        }
+        if (argc<=1 || userParameters->getInteractive())
+        {
+            // FIXME: additional parameters like infile are ignored!
+            InteractiveMenu menu;
+            userParameters->setMenuFlag(true);
+            userParameters->setInteractive(true);
+            menu.mainMenu();
+        }
+        delete userParameters;
+        delete utilityObject;
+        delete subMatrix;
+        
+        if(logObject)
+        {
+            delete logObject;
+        }
     }
-    delete userParameters;
-    delete utilityObject;
-    delete subMatrix;
-    
-    if(logObject)
-    {
-        delete logObject;
+
+    //realization of parallel algo here
+    if (r != 0)
+    {                  
+        ParallelAlgo parAlgo;
+        parAlgo.DoFullPairwiseAlignment();
     }
+
+    MPI_Finalize();
+
     return 0;
 }
 

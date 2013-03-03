@@ -2,19 +2,20 @@
 
 using namespace clustalw;
 
-MMAlgo::MMAlgo(): 
-	printPtr(0),
+MMAlgo::MMAlgo(ExternalData* d): 
+    printPtr(0),
   lastPrint(0),
   _ptrToSeq1(NULL),
   _ptrToSeq2(NULL),
   _gapOpen(0),
   _gapExtend(0)
 {
-  displ.resize((2 * ExtendData::maxAlnLength) + 1);
-  HH.resize(ExtendData::maxAlnLength);
-  DD.resize(ExtendData::maxAlnLength);
-  RR.resize(ExtendData::maxAlnLength);
-  SS.resize(ExtendData::maxAlnLength);  
+  data = d;
+  displ.resize((2 * data->maxAlnLength) + 1);
+  HH.resize(data->maxAlnLength);
+  DD.resize(data->maxAlnLength);
+  RR.resize(data->maxAlnLength);
+  SS.resize(data->maxAlnLength);  
 }
 
 MMAlgo::~MMAlgo()
@@ -42,7 +43,7 @@ int MMAlgo::Pass(int sb1, int sb2, int len1, int len2, int tb, int te, const vec
 
 inline int MMAlgo::calcScore(int i, int j, int sb1, int sb2)
 {
-    return ExtendData::matrix[(*_ptrToSeq1)[sb1 + i]][(*_ptrToSeq2)[sb2 + j]];
+    return data->matrix[(*_ptrToSeq1)[sb1 + i]][(*_ptrToSeq2)[sb2 + j]];
 }
 
 void MMAlgo::addToDisplay(int v)

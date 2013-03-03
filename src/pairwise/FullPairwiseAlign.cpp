@@ -9,7 +9,7 @@
 #include "FullPairwiseAlign.h"
 #include <math.h>
 #include <omp.h>
- #include <mpi.h>
+#include <mpi.h>
 
 namespace clustalw
 {
@@ -43,160 +43,82 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
  
     int seq1 = seq1;
     int seq2 = seq2;
- 	int maxScore = maxScore;
+ 	  int maxScore = maxScore;
     
     try
     {
+      if(distMat->getSize() != alignPtr->getNumSeqs() + 1) {
+        cerr << "The distance matrix is not the right size!\n"
+             << "Need to terminate program.\n";
+        exit(1);
+      }
+
+      if((iStart < 0) || (iEnd < iStart) || (jStart < 0) || (jEnd < jStart)) {
+        cerr << "The range for pairwise Alignment is incorrect.\n"
+             << "Need to terminate program.\n";
+        exit(1);
+      }
+      
+      if(ExtendData::numSeqs == 0) {
+        return;
+      }
+      
+      if (ExtendData::maxRes == 0) {
+        cerr << "Could not get the substitution matrix\n";
+        return;
+      }
+         
+     	const SeqArray* _ptrToSeqArray = alignPtr->getSeqArray(); //This is faster! 
+      
+      //MPI         
+      int myrank, ntasks;
+
+      MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+      MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
+
+      sendExtendData();
+      
+
+      //start sending sequences
+      int bounds[4] = {
+        iStart,
+        iEnd,
+        jStart,
+        jEnd
+      };
+
+      MPI_Send(&bounds, 4, MPI_INT, 1, 0, MPI_COMM_WORLD);
+
+      int initSi = utilityObject->MAX(0, iStart),
+          boundSi = utilityObject->MIN(ExtendData::numSeqs,iEnd);
+
+      //send sequences
+      const int NUMBER_OF_SEQ = ExtendData::numSeqs - initSi;
+
+      for (si=initSi; si<initSi+NUMBER_OF_SEQ; si++) {
+        std::vector<int> seq = (*_ptrToSeqArray)[si + 1];
+        int* data = seq.data();
+
+        int size = seq.size();
+
+      #ifdef DEBUG
+        cout << "Size: " << size << endl;        
+      #endif
         
-        if(distMat->getSize() != alignPtr->getNumSeqs() + 1)
-        {
-            cerr << "The distance matrix is not the right size!\n"
-                 << "Need to terminate program.\n";
-            exit(1);
-        }
-        if((iStart < 0) || (iEnd < iStart) || (jStart < 0) || (jEnd < jStart))
-        {
-            cerr << "The range for pairwise Alignment is incorrect.\n"
-                 << "Need to terminate program.\n";
-            exit(1);
-        }
-        
-        if(ExtendData::numSeqs == 0)
-        {
-            return;
-        }
-        
-        if (ExtendData::maxRes == 0)
-        {
-            cerr << "Could not get the substitution matrix\n";
-            return;
-        }
-           
-       	const SeqArray* _ptrToSeqArray = alignPtr->getSeqArray(); //This is faster! 
-        
-        // Simplify loop vars for OMP
-    	int initSi = utilityObject->MAX(0, iStart),
-    		boundSi = utilityObject->MIN(ExtendData::numSeqs,iEnd);
+        MPI_Send(&size, 1, MPI_INT, 1, 0, MPI_COMM_WORLD);
+        MPI_Send(data, seq.size(), MPI_INT, 1, 0, MPI_COMM_WORLD);              
+      }   
 
-        int portionPerProc = 0;
-        //Keep in mind that num of procs is power of 2
-        if ((boundSi - initSi) % 2 == 0 ) {
-            portionPerProc = (boundSi - initSi) / 2;
-        }
-        else {
-            cerr << "Can't properly divide work between procs!" << endl;
-            return;
-        }
+      int size;
+      MPI_Recv(&size, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      cout << "Size of distMat: " << size << endl;
 
-        MPI_Init(0, NULL);  
-    
-        int myrank;
+      float* unwindedDistMat = new float[size];
+      MPI_Recv(unwindedDistMat, size, MPI_FLOAT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-        MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
-        
-        /*if (myrank == 0) {
-        
-        cout << "Hello I'm master! My rank is 0"<< endl;
-        
-        } else {
-        
-        cout << "Hello I'm slave!  My rank is "<< myrank << endl;
-        
-        }*/
-
-        int startIdx    = myrank * portionPerProc,
-            endIdx      = startIdx + portionPerProc;          
-
-        cout    << "My rank is #" << myrank << endl
-                << "startIdx: " << startIdx << "; endIdx: " << endIdx << endl;
-        
-   		for (si = startIdx; si < endIdx; si++)
-        {
-            /*n = alignPtr->getSeqLength(si + 1);
-            len1 = 0;
-            for (i = 1; i <= n; i++)
-            {
-                res = (*_ptrToSeqArray)[si + 1][i];
-                if ((res != ExtendData::gapPos1) && (res != ExtendData::gapPos2))
-                {
-                    len1++;
-                }
-            }
-						
-			// Simplify loop vars for OMP
-			int initSj = utilityObject->MAX(si+1, jStart+1),
-			    boundSj = utilityObject->MIN(ExtendData::numSeqs,jEnd);
-																	
-			for (sj = initSj; sj <  boundSj ; sj++)
-            {
-            	m = alignPtr->getSeqLength(sj + 1);
-                
-                if (n == 0 || m == 0)
-                {
-
-               		distMat->SetAt(si + 1, sj + 1, 1.0);
-		       		distMat->SetAt(sj + 1, si + 1, 1.0);
-    	            continue;
-                }
-                len2 = 0;
-
-                for (i = 1; i <= m; i++)
-                {
-                    res = (*_ptrToSeqArray)[sj + 1][i];
-                    if ((res != ExtendData::gapPos1) && (res != ExtendData::gapPos2))
-                    {
-                        len2++;
-                    }
-                }
-                
-               	ExtendData::UpdateGapOpenAndExtend(_gapOpen, _gapExtend, n, m);
-                
-                // align the sequences
-            	seq1 = si + 1;
-                seq2 = sj + 1;
-
-                _ptrToSeq1 = alignPtr->getSequence(seq1);
-                _ptrToSeq2 = alignPtr->getSequence(seq2);
- 
- 				SWAlgo swalgo;
-				MMAlgo mmalgo;
-            	swalgo.Pass(_ptrToSeq1, _ptrToSeq2, n, m, _gapOpen, _gapExtend);
-                                 
-            	//use Myers and Miller to align two sequences 
-			 	maxScore = mmalgo.Pass(swalgo.sb1 - 1, swalgo.sb2 - 1, swalgo.se1 - swalgo.sb1 + 1, swalgo.se2 - swalgo.sb2 + 1,
-          	                             (int)0, (int)0, _ptrToSeq1, _ptrToSeq2, _gapOpen, _gapExtend);			               
-            	 // calculate percentage residue identity
-                mmScore = tracePath(swalgo.sb1, swalgo.sb2, mmalgo.displ, mmalgo.printPtr, _ptrToSeq1, _ptrToSeq2);
-
-    			if (len1 == 0 || len2 == 0)
-                {
-                    mmScore = 0;
-                }
-                else
-                {
-                    mmScore /= (float)utilityObject->MIN(len1, len2);
-                }
-
-				_score = ((float)100.0 - mmScore) / (float)100.0;
-				{
-				   	distMat->SetAt(si + 1, sj + 1, _score);
-		        	distMat->SetAt(sj + 1, si + 1, _score);
-		        }
-
-            //TODO: please uncomment me later!	
-
-              //   #pragma omp critical
-              //   {
-		            // if(userParameters->getDisplayInfo())
-		            // {
-		            //     utilityObject->info("Sequences (%d:%d) Aligned. Score:  %d",
-    		        //                             si+1, sj+1, (int)mmScore);     
-		            // }
-              //   }             
-           }*/
-       }
-    
-       MPI_Finalize();
+      for (int i=0; i<size; i+=3) {
+        distMat->SetAt((int)unwindedDistMat[i], (int)unwindedDistMat[i+1], unwindedDistMat[i+2]);        
+      }             
     }
     catch(const exception& e)
     {
@@ -206,69 +128,90 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
     }
 }
 
+void FullPairwiseAlign::sendExtendData(){
+  //Broadcast ExtendData to workers
+  //TODO: change from send to broadcast
+  int intBuf[8] = {
+    ExtendData::intScale,
+    ExtendData::matAvgScore,
+    ExtendData::maxRes,
+    (int)ExtendData::DNAFlag,
+    ExtendData::gapPos1,
+    ExtendData::gapPos2,
+    ExtendData::maxAlnLength,
+    ExtendData::numSeqs
+  };
+
+  MPI_Send(&intBuf, 8, MPI_INT, 1, 0, MPI_COMM_WORLD);
+
+  float floatBuf[4] = {
+    ExtendData::gapOpenScale,
+    ExtendData::gapExtendScale, 
+    ExtendData::pwGapOpen,
+    ExtendData::pwGapExtend
+  };
+
+  MPI_Send(&floatBuf, 4, MPI_FLOAT, 1, 0, MPI_COMM_WORLD);
+
+  int* matrix = new int[clustalw::NUMRES*clustalw::NUMRES]; // linearization of 2d matrix
+  for (int i=0; i<clustalw::NUMRES; i++) 
+    for (int j=0; j<clustalw::NUMRES; j++) {
+      matrix[i*clustalw::NUMRES+j] = ExtendData::matrix[i][j];
+    }
+  
+  MPI_Send(matrix, clustalw::NUMRES*clustalw::NUMRES, MPI_INT, 1, 0, MPI_COMM_WORLD);
+  delete[] matrix;
+
+  return;
+}
+
 float FullPairwiseAlign::tracePath(int tsb1, int tsb2, const vector<int>& displ, int printPtr,   const vector<int>* _ptrToSeq1,  const vector<int>* _ptrToSeq2)
 {
-    int res1, res2;
-    int i1, i2;
-    int i, k, pos, toDo;
-    int count;
-    float score;
+  int res1, res2;
+  int i1, i2;
+  int i, k, pos, toDo;
+  int count;
+  float score;
 
-    toDo = printPtr - 1;
-    i1 = tsb1;
-    i2 = tsb2;
+  toDo = printPtr - 1;
+  i1 = tsb1;
+  i2 = tsb2;
 
-    pos = 0;
-    count = 0;
-    for (i = 1; i <= toDo; ++i)
-    {
-        if (displ[i] == 0)
-        {
-            res1 = (*_ptrToSeq1)[i1];
-            res2 = (*_ptrToSeq2)[i2];
+  pos = 0;
+  count = 0;
+  for (i = 1; i <= toDo; ++i)
+  {
+      if (displ[i] == 0)
+      {
+          res1 = (*_ptrToSeq1)[i1];
+          res2 = (*_ptrToSeq2)[i2];
 
-            if ((res1 != userParameters->getGapPos1()) && 
-                (res2 != userParameters->getGapPos2()) && (res1 == res2))
-            {
-                count++;
-            }
-            ++i1;
-            ++i2;
-            ++pos;
-        }
-        else
-        {
-            if ((k = displ[i]) > 0)
-            {
-                i2 += k;
-                pos += k;
-            }
-            else
-            {
-                i1 -= k;
-                pos -= k;
-            }
-        }
-    }
-    
-    score = 100.0 *(float)count;
-    return (score);
+          if ((res1 != userParameters->getGapPos1()) && 
+              (res2 != userParameters->getGapPos2()) && (res1 == res2))
+          {
+              count++;
+          }
+          ++i1;
+          ++i2;
+          ++pos;
+      }
+      else
+      {
+          if ((k = displ[i]) > 0)
+          {
+              i2 += k;
+              pos += k;
+          }
+          else
+          {
+              i1 -= k;
+              pos -= k;
+          }
+      }
+  }
+  
+  score = 100.0 *(float)count;
+  return (score);
 }
-
-
-
-/*
-int FullPairwiseAlign::gap(int k)
-{
-    if(k <= 0)
-    {
-        return 0;
-    }
-    else
-    {
-        return _gapOpen + _gapExtend * k;
-    }
-}
-*/
 
 }

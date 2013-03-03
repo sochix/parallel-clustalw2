@@ -1,16 +1,20 @@
 #include "I_SWAlgo.h"
+#include <iostream>
 
 using namespace clustalw;
+using namespace std;
 
-SWAlgo::SWAlgo():
+SWAlgo::SWAlgo(ExternalData* d, const int* m):
 	sb1(0),
 	sb2(0),
 	se1(0),
 	se2(0),
 	maxScore(0)
 {
-	 HH.resize(ExtendData::maxAlnLength);
-   DD.resize(ExtendData::maxAlnLength);
+    data = d;
+    matrix = m;
+    HH.resize(data->maxAlnLength);
+    DD.resize(data->maxAlnLength);
 }
 
 SWAlgo::~SWAlgo()
@@ -21,6 +25,15 @@ SWAlgo::~SWAlgo()
 
 void SWAlgo::Pass(const vector<int>* seq1, const vector<int>* seq2, int n, int m, const int gapOpen, const int gapExtend)
 {
+    // cout << "Seq1: " <<endl;
+    // for (int i=0; i<seq1->size(); i++)
+    //     cout << (*seq1)[i];
+    // cout << endl <<  "Seq2: " <<endl;
+    // for (int i=0; i<seq2->size(); i++)
+    //     cout << (*seq2)[i];
+    // cout << endl;
+
+
 	forwardPass(seq1, seq2, n,m, gapOpen, gapExtend);
 	reversePass(seq1, seq2, gapOpen, gapExtend);
 }
@@ -60,7 +73,10 @@ void SWAlgo::forwardPass(const vector<int>* seq1, const vector<int>* seq2, int n
                 DD[j] = t;
             }
 
-            hh = p + ExtendData::matrix[(*seq1)[i]][(*seq2)[j]];
+            int index = (*seq1)[i]*clustalw::NUMRES+(*seq2)[j];
+            //hh  = p +index;
+            hh = p + matrix[index];//data->matrix[(*seq1)[i]][(*seq2)[j]];
+            
             if (hh < f)
             {
                 hh = f;
@@ -131,7 +147,7 @@ void SWAlgo::reversePass(const vector<int>* seq1, const vector<int>* seq2, const
                 DD[j] = t;
             }
 
-            hh = p + ExtendData::matrix[(*seq1)[i]][(*seq2)[j]];
+            hh = p + data->matrix[(*seq1)[i]][(*seq2)[j]];
             if (hh < f)
             {
                 hh = f;

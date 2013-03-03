@@ -7,6 +7,9 @@
 # Ignore objects files
 /src/*.o
 
+#ignore ctags
+.tags
+
 #Ignore temp alignment files
 /src/PfamTest.aln
 /src/PfamTest.dnd

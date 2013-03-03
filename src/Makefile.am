@@ -5,7 +5,7 @@
 
 # we do not use GNU-style files: NEWS README AUTHORS ChangeLog
 AUTOMAKE_OPTIONS = foreign
-AM_CXXFLAGS = /usr/lib/libtcmalloc_minimal.so.0.0.0 -fopenmp -I /usr/lib/openmpi/include/
+AM_CXXFLAGS = -g
 #SUBDIRS = pairwise fileInput tree/UPGMA tree  interface substitutionMatrix multipleAlign general alignment
 
 SUBDIRS=
@@ -31,6 +31,8 @@ clustalw2_SOURCES =  ./pairwise/PairwiseAlignBase.h \
  ./pairwise/I_MMAlgo.cpp \
  ./pairwise/I_SWAlgo.h \
  ./pairwise/I_SWAlgo.cpp \
+ ./parallel/ParallelAlgo.h \
+ ./parallel/ParallelAlgo.cpp \
  ./fileInput/FileParser.h \
  ./fileInput/EMBLFileParser.h \
  ./fileInput/MSFFileParser.cpp \

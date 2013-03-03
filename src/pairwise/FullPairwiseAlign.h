@@ -19,7 +19,7 @@ class FullPairwiseAlign : public PairwiseAlignBase
     public:
         /* Functions */
         FullPairwiseAlign();
-				virtual ~FullPairwiseAlign(){};
+		virtual ~FullPairwiseAlign(){};
 
         virtual void pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, int iStart, 
                                    int iEnd, int jStart, int jEnd); 
@@ -28,9 +28,11 @@ class FullPairwiseAlign : public PairwiseAlignBase
     private:
         /* Functions */
        
-        float tracePath(int tsb1, int tsb2, const vector<int>&, int, const vector<int>*, const vector<int>* );       
-       // int gap(int k);
-        
+       float tracePath(int tsb1, int tsb2, const vector<int>&, int, const vector<int>*, const vector<int>* );       
+       
+       //MPI
+       void sendExtendData();
+
         /* Attributes */
         // I have constant pointers to the data. This allows for the fastest access.
        // const vector<int>* _ptrToSeq1;
@@ -42,7 +44,7 @@ class FullPairwiseAlign : public PairwiseAlignBase
      
         int seq1;
         int seq2;
-     		int maxScore;
+     	int maxScore;
        
 
 };

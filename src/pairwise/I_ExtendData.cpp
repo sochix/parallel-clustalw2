@@ -67,5 +67,4 @@ void ExtendData::InitAlignmentParameters(clustalw::Alignment* alignPtr)
 {
 	maxAlnLength = alignPtr->getMaxAlnLength();
 	numSeqs = alignPtr->getNumSeqs();
-	
 }
