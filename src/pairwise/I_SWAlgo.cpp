@@ -4,7 +4,7 @@
 using namespace clustalw;
 using namespace std;
 
-SWAlgo::SWAlgo(ExternalData* d, const int* m):
+SWAlgo::SWAlgo(ExternalData* d):
 	sb1(0),
 	sb2(0),
 	se1(0),
@@ -12,7 +12,6 @@ SWAlgo::SWAlgo(ExternalData* d, const int* m):
 	maxScore(0)
 {
     data = d;
-    matrix = m;
     HH.resize(data->maxAlnLength);
     DD.resize(data->maxAlnLength);
 }
@@ -73,9 +72,7 @@ void SWAlgo::forwardPass(const vector<int>* seq1, const vector<int>* seq2, int n
                 DD[j] = t;
             }
 
-            int index = (*seq1)[i]*clustalw::NUMRES+(*seq2)[j];
-            //hh  = p +index;
-            hh = p + matrix[index];//data->matrix[(*seq1)[i]][(*seq2)[j]];
+            hh = p + data->matrix[(*seq1)[i]][(*seq2)[j]];
             
             if (hh < f)
             {

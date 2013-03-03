@@ -9,7 +9,7 @@ namespace clustalw {
 class SWAlgo
 {
 	public:
-		SWAlgo(ExternalData*, const int*);
+		SWAlgo(ExternalData*);
 		~SWAlgo();
 		void Pass(const vector<int>* seq1, const vector<int>* seq2, int n, int m, const int, const int);
 		

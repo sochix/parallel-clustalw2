@@ -40,13 +40,18 @@ class ParallelAlgo
 {
 	public:
 		void DoFullPairwiseAlignment();	
-		int* matrix;
 
 	private:
+
+		//MPI
 		void recieveExtendData();
 		void recieveSequences();
+		void sendDistMat(std::vector<distMatrixRecord>*);
+
+		//Helpers
 		int translateIndex(int, int);
 		float tracePath(int, int, const std::vector<int>&, int printPtr, const std::vector<int>*,  const std::vector<int>*);
+		
 
 		//data
 		int initSi;

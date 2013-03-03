@@ -98,7 +98,7 @@ void ParallelAlgo::DoFullPairwiseAlignment() {
 		    _ptrToSeq1 = &seqArray[seq1];
 		    _ptrToSeq2 = &seqArray[seq2];
 
-			SWAlgo swalgo(&data, matrix);
+			SWAlgo swalgo(&data);
 			MMAlgo mmalgo(&data);
 			
 			#ifdef DEBUG
@@ -126,7 +126,6 @@ void ParallelAlgo::DoFullPairwiseAlignment() {
         		mmScore /= (float)utilityObject->MIN(len1, len2);
       		}
 
-      		
       		_score = ((float)100.0 - mmScore) / (float)100.0; 
       		#ifdef DEBUG
 	      		cout << "mmScore: " << mmScore << endl;		               
@@ -149,15 +148,20 @@ void ParallelAlgo::DoFullPairwiseAlignment() {
 		}
 	}    
 	
-	int size = distMat.size() * 3;
+	sendDistMat(&distMat);
+	return;
+}
+
+void ParallelAlgo::sendDistMat(std::vector<distMatrixRecord>* distMat) {
+	int size = distMat->size() * 3;
     MPI_Send(&size, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
 
     //temporal solution, should bde MPI_Type
     float* unwindedMat  = new float[size]; 
-    for (int i=0; i<distMat.size(); i++) {
-    	unwindedMat[i*3+0] = distMat[i].row;
-    	unwindedMat[i*3+1] = distMat[i].col;
-    	unwindedMat[i*3+2] = distMat[i].val;
+    for (int i=0; i<distMat->size(); i++) {
+    	unwindedMat[i*3+0] = (*distMat)[i].row;
+    	unwindedMat[i*3+1] = (*distMat)[i].col;
+    	unwindedMat[i*3+2] = (*distMat)[i].val;
     }
 
     MPI_Send(unwindedMat, size, MPI_FLOAT, 0, 0, MPI_COMM_WORLD);
@@ -209,7 +213,6 @@ void ParallelAlgo::recieveSequences()
 
         MPI_Recv(seqPtr, size, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         //TODO: maybe memory leak
-
         seqArray.push_back(seq);
 
     }
@@ -241,7 +244,7 @@ void ParallelAlgo::recieveExtendData() {
     	cout << "clustalw::NUMRES: " << clustalw::NUMRES << endl;
     #endif
 
-	matrix = new int[clustalw::NUMRES*clustalw::NUMRES]; 
+	int* matrix = new int[clustalw::NUMRES*clustalw::NUMRES]; 
 	MPI_Recv(matrix, clustalw::NUMRES*clustalw::NUMRES, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     
     for (int i=0; i<clustalw::NUMRES; i++) 
@@ -249,7 +252,7 @@ void ParallelAlgo::recieveExtendData() {
         data.matrix[i][j] = matrix[i*clustalw::NUMRES+j];
       }    
 
-   	//delete[] matrix;    
+   	delete[] matrix;    
 
     #ifdef DEBUG
     	cout << "data.intScale:       " << data.intScale << endl;
