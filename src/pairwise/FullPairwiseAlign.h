@@ -25,11 +25,16 @@ class FullPairwiseAlign : public PairwiseAlignBase
         /* Attributes */
 
     private:
+        /* Attributes */
+        int isInteger;
+        int portionPerProc;
+        int lastProcPortion;        
         /* Functions */
        //MPI
        void broadcastExtendData();
        void sendSequences(Alignment*, int,int,int,int);
        void recieveDistMatrix(DistMatrix*);
+       void scheduleSequences(int); //has side effect!
 };
 
 }

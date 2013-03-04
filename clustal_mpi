@@ -1,0 +1,13 @@
+#!/bin/sh
+
+echo "All right script started..."
+echo `mpirun -n 2 ./src/clustalw2 ./src/PfamTest.fasta` > log.txt
+if ! diff ./sample/PfamTest.aln ./src/PfamTest.aln; then
+	echo "ERROR! Files NOT equal!"
+	exit 1
+else
+	echo "Ok. Files equal"
+	rm -f $path_to_result
+	rm -f $path_to_result_dnd
+fi
+exit 0

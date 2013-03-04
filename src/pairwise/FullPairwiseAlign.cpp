@@ -8,7 +8,6 @@
 #endif
 #include "FullPairwiseAlign.h"
 #include <math.h>
-#include <omp.h>
 #include <mpi.h>
 
 namespace clustalw
@@ -72,13 +71,37 @@ void FullPairwiseAlign::recieveDistMatrix(DistMatrix* distMat){
     distMat->SetAt(si, sj, _score);    
     distMat->SetAt(sj, si, _score);
     
-    if(userParameters->getDisplayInfo()) {
-       utilityObject->info("Sequences (%d:%d) Aligned. Score:  %d", si, sj, (int)(100.f - (_score*100.f)));     
-    }
+    // if(userParameters->getDisplayInfo()) {
+    //    utilityObject->info("Sequences (%d:%d) Aligned. Score:  %d", si, sj, (int)(100.f - (_score*100.f)));     
+    // }
   }
 
   delete[] unwindedDistMat;             
   return;
+}
+
+void FullPairwiseAlign::scheduleSequences(int numOfSeq) {
+  //TODO: should be improved!
+  int procNum;
+  MPI_Comm_size( MPI_COMM_WORLD, &procNum ) ;
+  --procNum; //#0 proc is master
+  
+  isInteger = false;
+
+  if (numOfSeq % procNum == 0)  {
+    portionPerProc = numOfSeq/procNum;
+  } else {
+    isInteger = true;
+    portionPerProc = numOfSeq/procNum;
+    lastProcPortion = numOfSeq - portionPerProc*(procNum-1);
+  }
+
+  cout << "Scheduler information" << endl;
+  cout << "numOfSeq: " << numOfSeq << endl;
+  cout << "Num of procs: " << procNum << endl;
+  cout << "isInteger: " << isInteger << endl;
+  cout << "portion of seq per proc: " << portionPerProc << endl;
+  cout << "last proc portion: " << lastProcPortion << endl;
 }
 
 void FullPairwiseAlign::sendSequences(Alignment* alignPtr, int iStart, int iEnd, int jStart, int jEnd) {
@@ -91,15 +114,16 @@ void FullPairwiseAlign::sendSequences(Alignment* alignPtr, int iStart, int iEnd,
     jEnd
   };
 
-  //send init data
-  
-  MPI_Send(&bounds, 4, MPI_INT, 1, 0, MPI_COMM_WORLD);
-
   int initSi = utilityObject->MAX(0, iStart),
       boundSi = utilityObject->MIN(ExtendData::numSeqs,iEnd);
 
   //send sequences
   const int NUMBER_OF_SEQ = ExtendData::numSeqs - initSi;
+  scheduleSequences(NUMBER_OF_SEQ);
+
+  //send init data
+  
+  MPI_Send(&bounds, 4, MPI_INT, 1, 0, MPI_COMM_WORLD); 
 
   for (int si=initSi; si<initSi+NUMBER_OF_SEQ; si++) {
     std::vector<int> seq = (*_ptrToSeqArray)[si + 1];
