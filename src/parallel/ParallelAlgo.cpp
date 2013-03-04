@@ -69,7 +69,7 @@ void ParallelAlgo::DoFullPairwiseAlignment() {
 																
 		for (sj = initSj; sj < boundSj; sj++) {
 			//m = alignPtr->getSeqLength(sj + 1);
-			m = seqArray[translateIndex(sj + 1, initSj+1)].size()-1;
+			m = seqArray[translateIndex(sj + 1, initSi+1)].size()-1;
 		          
 		  	if (n == 0 || m == 0) {
 		  		//THINK!
@@ -83,7 +83,7 @@ void ParallelAlgo::DoFullPairwiseAlignment() {
 	      	len2 = 0;
 	      	for (i = 1; i <= m; i++) {
 	        	//res = (*_ptrToSeqArray)[sj + 1][i];
-	        	res = seqArray[translateIndex(sj + 1, initSj+1)][i];
+	        	res = seqArray[translateIndex(sj + 1, initSi+1)][i];
 	        	if ((res != data.gapPos1) && (res != data.gapPos2)) {
 	          		len2++;
 	        	}
@@ -93,7 +93,7 @@ void ParallelAlgo::DoFullPairwiseAlignment() {
             
       		// align the sequences
     		seq1 = translateIndex(si + 1, initSi+1);
-      		seq2 = translateIndex(sj + 1, initSj+1);
+      		seq2 = translateIndex(sj + 1, initSi+1);
 
 		    _ptrToSeq1 = &seqArray[seq1];
 		    _ptrToSeq2 = &seqArray[seq2];
@@ -134,6 +134,9 @@ void ParallelAlgo::DoFullPairwiseAlignment() {
 		   	
 		   	distMat.push_back(distMatrixRecord(si+1, sj+1, _score));
 		   	distMat.push_back(distMatrixRecord(sj+1, si+1, _score));
+
+		   	cout << "Sequences (" << si+1 << ":" << sj+1 << ") Aligned. Score: " << (int)mmScore << endl;
+		   		
 		   	// distMat->SetAt(si + 1, sj + 1, _score);
     		// distMat->SetAt(sj + 1, si + 1, _score);
 	      //TODO: please uncomment me later!	
@@ -156,7 +159,7 @@ void ParallelAlgo::sendDistMat(std::vector<distMatrixRecord>* distMat) {
 	int size = distMat->size() * 3;
     MPI_Send(&size, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
 
-    //temporal solution, should bde MPI_Type
+    //temporal solution, should be MPI_Type
     float* unwindedMat  = new float[size]; 
     for (int i=0; i<distMat->size(); i++) {
     	unwindedMat[i*3+0] = (*distMat)[i].row;
@@ -323,7 +326,6 @@ float ParallelAlgo::tracePath(int tsb1, int tsb2, const vector<int>& displ, int 
           res1 = (*_ptrToSeq1)[i1];
           res2 = (*_ptrToSeq2)[i2];
 
-          //maybe uncorrect change from userParam to exData
           if ((res1 != data.gapPos1) && 
               (res2 != data.gapPos2) && (res1 == res2))
           {
