@@ -17,12 +17,13 @@ int ParallelAlgo::iEnd;
 int ParallelAlgo::jStart;
 int ParallelAlgo::jEnd;
 
+bool ParallelAlgo::isInteger;
+int ParallelAlgo::portionPerProc;
+int ParallelAlgo::lastProcPortion;
+
 
 void ParallelAlgo::DoFullPairwiseAlignment() {
 
-	int r;
-	MPI_Comm_rank(MPI_COMM_WORLD, &r);
-	
 	//init steps
 	recieveExtendData(); 
 	recieveSequences(); 
@@ -48,8 +49,33 @@ void ParallelAlgo::DoFullPairwiseAlignment() {
     const vector<int>* _ptrToSeq2 = NULL;
     vector<distMatrixRecord> distMat;
 
-    int initSi = utilityObject->MAX(0, iStart),
-        boundSi = utilityObject->MIN(data.numSeqs,iEnd);
+    int r,
+		procNum;
+	MPI_Comm_rank(MPI_COMM_WORLD, &r);
+  	MPI_Comm_size(MPI_COMM_WORLD, &procNum);
+
+  	int mpiStartIdx,
+  		mpiEndIdx;
+
+  	if (iStart != 0) {
+  		mpiStartIdx = iStart*r; //TODO: think	
+  	} else {
+  		mpiStartIdx = (r-1)*portionPerProc;
+  	}  	
+
+  	if ((isInteger) || (r != procNum-1)) {
+  		mpiEndIdx = mpiStartIdx+portionPerProc;	
+  	} else {
+  		cout << "Proc#" << r << "is last one!" << endl;
+  		mpiEndIdx = mpiStartIdx+lastProcPortion;
+  	}
+  	
+
+    int initSi = utilityObject->MAX(0, mpiStartIdx),
+        boundSi = utilityObject->MIN(data.numSeqs,mpiEndIdx);
+
+    cout 	<< "Proc #" << r << " initSi: "<< initSi << " boundSi: " << boundSi << endl
+    		<< "mpiStartIdx: " << mpiStartIdx << " mpiEndIdx: " << mpiEndIdx << endl;
 
 	for (si = initSi; si < boundSi; si++) {
 	    //n = alignPtr->getSeqLength(si + 1);
@@ -140,6 +166,10 @@ void ParallelAlgo::DoFullPairwiseAlignment() {
 }
 
 void ParallelAlgo::sendDistMat(std::vector<distMatrixRecord>* distMat) {
+	int r;
+	MPI_Comm_rank(MPI_COMM_WORLD, &r);
+	cout << "Proc #" << r << " has " << distMat->size() << " aligned seq." << endl;
+
 	int size = distMat->size() * 3;
     MPI_Send(&size, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
 
@@ -169,9 +199,16 @@ int ParallelAlgo::translateIndex(int i, int delta)
 
 void ParallelAlgo::recieveSequences()
 {
+	int schedule[3];
+	MPI_Bcast(&schedule, 3, MPI_INT, 0, MPI_COMM_WORLD);
+	
+	isInteger = (bool)schedule[0];
+	portionPerProc = schedule[1],
+	lastProcPortion = schedule[2];
+
 	int bounds[4];
-    MPI_Recv(&bounds, 4, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-    
+	MPI_Bcast(&bounds, 4, MPI_INT, 0, MPI_COMM_WORLD);
+        
     iStart = bounds[0];
     iEnd = bounds[1];
     jStart = bounds[2];
@@ -189,7 +226,7 @@ void ParallelAlgo::recieveSequences()
     for (int si=initSi; si<initSi+NUMBER_OF_SEQ; si++) {
         
         int size;
-        MPI_Recv(&size, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        MPI_Bcast(&size, 1, MPI_INT, 0, MPI_COMM_WORLD);	
 
 	 	#ifdef DEBUG
 	        cout << "[ALGO] Size: "<< size << endl;
@@ -198,10 +235,10 @@ void ParallelAlgo::recieveSequences()
         std::vector<int> seq(size);
         int* seqPtr = seq.data();
 
-        MPI_Recv(seqPtr, size, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        //TODO: maybe memory leak
+        MPI_Bcast(seqPtr, size, MPI_INT, 0, MPI_COMM_WORLD);              
+        
+        //TODO: maybe memory leak, change to auto_ptr
         seqArray.push_back(seq);
-
     }
 }
 

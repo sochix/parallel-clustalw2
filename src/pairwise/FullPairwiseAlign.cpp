@@ -53,30 +53,34 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
 }
 
 void FullPairwiseAlign::recieveDistMatrix(DistMatrix* distMat){
-  int size;
-  MPI_Recv(&size, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-  #ifdef DEBUG
-    cout << "Size of distMat: " << size << endl;
-  #endif
+  int procNum;
+  MPI_Comm_size(MPI_COMM_WORLD, &procNum);
 
-  float* unwindedDistMat = new float[size];
-  MPI_Recv(unwindedDistMat, size, MPI_FLOAT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  for (int proc=1; proc<procNum; proc++) {
+    int size;
+    MPI_Recv(&size, 1, MPI_INT, proc, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    #ifdef DEBUG
+      cout << "Size of distMat: " << size << endl;
+    #endif
 
-  for (int i=0; i<size; i+=3) {
-    int si = (int)unwindedDistMat[i],
-        sj = (int)unwindedDistMat[i+1];
+    float* unwindedDistMat = new float[size];
+    MPI_Recv(unwindedDistMat, size, MPI_FLOAT, proc, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-    float _score = unwindedDistMat[i+2];
-    
-    distMat->SetAt(si, sj, _score);    
-    distMat->SetAt(sj, si, _score);
-    
-    // if(userParameters->getDisplayInfo()) {
-    //    utilityObject->info("Sequences (%d:%d) Aligned. Score:  %d", si, sj, (int)(100.f - (_score*100.f)));     
-    // }
+    for (int i=0; i<size; i+=3) {
+      int si = (int)unwindedDistMat[i],
+          sj = (int)unwindedDistMat[i+1];
+
+      float _score = unwindedDistMat[i+2];
+      
+      distMat->SetAt(si, sj, _score);    
+      distMat->SetAt(sj, si, _score);
+      
+      if(userParameters->getDisplayInfo()) {
+          utilityObject->info("[%d]Sequences (%d:%d) Aligned. Score:  %d", proc, si, sj, (int)(100.f - (_score*100.f)));     
+      }
+    }
+    delete[] unwindedDistMat;               
   }
-
-  delete[] unwindedDistMat;             
   return;
 }
 
@@ -86,12 +90,12 @@ void FullPairwiseAlign::scheduleSequences(int numOfSeq) {
   MPI_Comm_size( MPI_COMM_WORLD, &procNum ) ;
   --procNum; //#0 proc is master
   
-  isInteger = false;
+  isInteger = true;
 
   if (numOfSeq % procNum == 0)  {
     portionPerProc = numOfSeq/procNum;
   } else {
-    isInteger = true;
+    isInteger = false;
     portionPerProc = numOfSeq/procNum;
     lastProcPortion = numOfSeq - portionPerProc*(procNum-1);
   }
@@ -102,29 +106,35 @@ void FullPairwiseAlign::scheduleSequences(int numOfSeq) {
   cout << "isInteger: " << isInteger << endl;
   cout << "portion of seq per proc: " << portionPerProc << endl;
   cout << "last proc portion: " << lastProcPortion << endl;
+  int schedule[3];
+  schedule[0] = (int)isInteger;
+  schedule[1] = portionPerProc;
+  schedule[2] = lastProcPortion;
+
+  MPI_Bcast(&schedule, 3, MPI_INT, 0, MPI_COMM_WORLD);
 }
 
 void FullPairwiseAlign::sendSequences(Alignment* alignPtr, int iStart, int iEnd, int jStart, int jEnd) {
   const SeqArray* _ptrToSeqArray = alignPtr->getSeqArray(); //This is faster! 
 
   int bounds[4] = {
-    iStart,
-    iEnd,
-    jStart,
-    jEnd
+     iStart,
+     iEnd,
+     jStart,
+     jEnd
   };
 
   int initSi = utilityObject->MAX(0, iStart),
       boundSi = utilityObject->MIN(ExtendData::numSeqs,iEnd);
-
+  
+  int procNum;
+  MPI_Comm_size( MPI_COMM_WORLD, &procNum ) ;
   //send sequences
   const int NUMBER_OF_SEQ = ExtendData::numSeqs - initSi;
   scheduleSequences(NUMBER_OF_SEQ);
-
-  //send init data
   
-  MPI_Send(&bounds, 4, MPI_INT, 1, 0, MPI_COMM_WORLD); 
-
+  MPI_Bcast(&bounds, 4, MPI_INT, 0, MPI_COMM_WORLD);
+  
   for (int si=initSi; si<initSi+NUMBER_OF_SEQ; si++) {
     std::vector<int> seq = (*_ptrToSeqArray)[si + 1];
     int* data = seq.data();
@@ -134,8 +144,8 @@ void FullPairwiseAlign::sendSequences(Alignment* alignPtr, int iStart, int iEnd,
     cout << "Size: " << size << endl;        
   #endif
     
-    MPI_Send(&size, 1, MPI_INT, 1, 0, MPI_COMM_WORLD);
-    MPI_Send(data, seq.size(), MPI_INT, 1, 0, MPI_COMM_WORLD);              
+    MPI_Bcast(&size, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(data, seq.size(), MPI_INT, 0, MPI_COMM_WORLD);              
   }   
 
   return;
