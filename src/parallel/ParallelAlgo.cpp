@@ -24,8 +24,8 @@ void ParallelAlgo::DoFullPairwiseAlignment() {
 	MPI_Comm_rank(MPI_COMM_WORLD, &r);
 	
 	//init steps
-	recieveExtendData();
-	recieveSequences();
+	recieveExtendData(); 
+	recieveSequences(); 
 
 	int len1,
         i,
@@ -132,15 +132,6 @@ void ParallelAlgo::DoFullPairwiseAlignment() {
 		   	
 		   	distMat.push_back(distMatrixRecord(si+1, sj+1, _score));
 		   
-	      //TODO: please uncomment me later!	
-	      //   #pragma omp critical
-	      //   {
-	      // if(userParameters->getDisplayInfo())
-	      // {
-	      //     utilityObject->info("Sequences (%d:%d) Aligned. Score:  %d",
-	        //                             si+1, sj+1, (int)mmScore);     
-	      // }
-	      //   }             
 		}
 	}    
 	
@@ -217,8 +208,9 @@ void ParallelAlgo::recieveSequences()
 void ParallelAlgo::recieveExtendData() {
 	//get ExtendData
 	int intBuf[8];
-	MPI_Recv(&intBuf, 8, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
+	MPI_Bcast(&intBuf, 8, MPI_INT, 0, MPI_COMM_WORLD);
+	
     data.intScale = intBuf[0];
 	data.matAvgScore = intBuf[1];
 	data.maxRes = intBuf[2];
@@ -229,8 +221,8 @@ void ParallelAlgo::recieveExtendData() {
 	data.numSeqs = intBuf[7];
 
 	float floatBuf[4];
-	MPI_Recv(&floatBuf, 4, MPI_FLOAT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-
+	MPI_Bcast(&floatBuf, 4, MPI_FLOAT, 0, MPI_COMM_WORLD);
+	
 	data.gapOpenScale = floatBuf[0];
 	data.gapExtendScale = floatBuf[1];
 	data.pwGapOpen = floatBuf[2];
@@ -241,8 +233,8 @@ void ParallelAlgo::recieveExtendData() {
     #endif
 
 	int* matrix = new int[clustalw::NUMRES*clustalw::NUMRES]; 
-	MPI_Recv(matrix, clustalw::NUMRES*clustalw::NUMRES, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-    
+    MPI_Bcast(matrix, clustalw::NUMRES*clustalw::NUMRES, MPI_INT, 0, MPI_COMM_WORLD);
+
     for (int i=0; i<clustalw::NUMRES; i++) 
       for (int j=0; j<clustalw::NUMRES; j++) {
         data.matrix[i][j] = matrix[i*clustalw::NUMRES+j];

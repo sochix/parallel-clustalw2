@@ -27,7 +27,7 @@ class FullPairwiseAlign : public PairwiseAlignBase
     private:
         /* Functions */
        //MPI
-       void sendExtendData();
+       void broadcastExtendData();
        void sendSequences(Alignment*, int,int,int,int);
        void recieveDistMatrix(DistMatrix*);
 };

@@ -39,7 +39,7 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
         return;
       }
 
-      sendExtendData();
+      broadcastExtendData();
       sendSequences(alignPtr, iStart, iEnd, jStart, jEnd);
       recieveDistMatrix(distMat);     
 
@@ -117,9 +117,7 @@ void FullPairwiseAlign::sendSequences(Alignment* alignPtr, int iStart, int iEnd,
   return;
 }
 
-void FullPairwiseAlign::sendExtendData(){
-  //Broadcast ExtendData to workers
-  //TODO: change from send to broadcast
+void FullPairwiseAlign::broadcastExtendData(){
   int intBuf[8] = {
     ExtendData::intScale,
     ExtendData::matAvgScore,
@@ -131,7 +129,7 @@ void FullPairwiseAlign::sendExtendData(){
     ExtendData::numSeqs
   };
 
-  MPI_Send(&intBuf, 8, MPI_INT, 1, 0, MPI_COMM_WORLD);
+  MPI_Bcast(&intBuf, 8, MPI_INT, 0, MPI_COMM_WORLD);
 
   float floatBuf[4] = {
     ExtendData::gapOpenScale,
@@ -140,15 +138,17 @@ void FullPairwiseAlign::sendExtendData(){
     ExtendData::pwGapExtend
   };
 
-  MPI_Send(&floatBuf, 4, MPI_FLOAT, 1, 0, MPI_COMM_WORLD);
 
+  MPI_Bcast(&floatBuf, 4, MPI_FLOAT, 0, MPI_COMM_WORLD);
+  
   int* matrix = new int[clustalw::NUMRES*clustalw::NUMRES]; // linearization of 2d matrix
   for (int i=0; i<clustalw::NUMRES; i++) 
     for (int j=0; j<clustalw::NUMRES; j++) {
       matrix[i*clustalw::NUMRES+j] = ExtendData::matrix[i][j];
     }
   
-  MPI_Send(matrix, clustalw::NUMRES*clustalw::NUMRES, MPI_INT, 1, 0, MPI_COMM_WORLD);
+  MPI_Bcast(matrix, clustalw::NUMRES*clustalw::NUMRES, MPI_INT, 0, MPI_COMM_WORLD);
+  
   delete[] matrix;
 
   return;
