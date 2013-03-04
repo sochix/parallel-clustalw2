@@ -42,6 +42,8 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
       sendExtendData();
       sendSequences(alignPtr, iStart, iEnd, jStart, jEnd);
       recieveDistMatrix(distMat);     
+
+      
     }
     catch(const exception& e)
     {
@@ -62,7 +64,17 @@ void FullPairwiseAlign::recieveDistMatrix(DistMatrix* distMat){
   MPI_Recv(unwindedDistMat, size, MPI_FLOAT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
   for (int i=0; i<size; i+=3) {
-    distMat->SetAt((int)unwindedDistMat[i], (int)unwindedDistMat[i+1], unwindedDistMat[i+2]);        
+    int si = (int)unwindedDistMat[i],
+        sj = (int)unwindedDistMat[i+1];
+
+    float _score = unwindedDistMat[i+2];
+    
+    distMat->SetAt(si, sj, _score);    
+    distMat->SetAt(sj, si, _score);
+    
+    if(userParameters->getDisplayInfo()) {
+       utilityObject->info("Sequences (%d:%d) Aligned. Score:  %d", si, sj, (int)(100.f - (_score*100.f)));     
+    }
   }
 
   delete[] unwindedDistMat;             
@@ -80,7 +92,7 @@ void FullPairwiseAlign::sendSequences(Alignment* alignPtr, int iStart, int iEnd,
   };
 
   //send init data
-
+  
   MPI_Send(&bounds, 4, MPI_INT, 1, 0, MPI_COMM_WORLD);
 
   int initSi = utilityObject->MAX(0, iStart),

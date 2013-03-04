@@ -27,9 +27,7 @@ void ParallelAlgo::DoFullPairwiseAlignment() {
 	recieveExtendData();
 	recieveSequences();
 
-	int initSi = utilityObject->MAX(0, iStart),
-        boundSi = utilityObject->MIN(data.numSeqs,iEnd),
-        len1,
+	int len1,
         i,
         si,
         sj,
@@ -38,8 +36,8 @@ void ParallelAlgo::DoFullPairwiseAlignment() {
         res, 
         seq1,
         seq2;
-    double mmScore,
-        	_score;
+    float mmScore;
+    double _score;
         
 
     int _gapOpen = 0; // scaled to be an integer, this is not a mistake
@@ -49,6 +47,9 @@ void ParallelAlgo::DoFullPairwiseAlignment() {
     const vector<int>* _ptrToSeq1 = NULL;
     const vector<int>* _ptrToSeq2 = NULL;
     vector<distMatrixRecord> distMat;
+
+    int initSi = utilityObject->MAX(0, iStart),
+        boundSi = utilityObject->MIN(data.numSeqs,iEnd);
 
 	for (si = initSi; si < boundSi; si++) {
 	    //n = alignPtr->getSeqLength(si + 1);
@@ -74,10 +75,7 @@ void ParallelAlgo::DoFullPairwiseAlignment() {
 		  	if (n == 0 || m == 0) {
 		  		//THINK!
 		 		distMat.push_back(distMatrixRecord(si+1, sj+1,1.0));
-		 		distMat.push_back(distMatrixRecord(sj+1, si+1,1.0));
-		 		//->SetAt(si + 1, sj + 1, 1.0);
-		   		//distMat->SetAt(sj + 1, si + 1, 1.0);
-		    	continue;
+		 		continue;
   			}
 
 	      	len2 = 0;
@@ -133,12 +131,7 @@ void ParallelAlgo::DoFullPairwiseAlignment() {
       		#endif
 		   	
 		   	distMat.push_back(distMatrixRecord(si+1, sj+1, _score));
-		   	distMat.push_back(distMatrixRecord(sj+1, si+1, _score));
-
-		   	cout << "Sequences (" << si+1 << ":" << sj+1 << ") Aligned. Score: " << (int)mmScore << endl;
-		   		
-		   	// distMat->SetAt(si + 1, sj + 1, _score);
-    		// distMat->SetAt(sj + 1, si + 1, _score);
+		   
 	      //TODO: please uncomment me later!	
 	      //   #pragma omp critical
 	      //   {
