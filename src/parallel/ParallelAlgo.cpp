@@ -66,24 +66,24 @@ void ParallelAlgo::DoFullPairwiseAlignment() {
   	if ((isInteger) || (r != procNum-1)) {
   		mpiEndIdx = mpiStartIdx+portionPerProc;	
   	} else {
-  		cout << "Proc#" << r << "is last one!" << endl;
   		mpiEndIdx = mpiStartIdx+lastProcPortion;
   	}
   	
 
     int initSi = utilityObject->MAX(0, mpiStartIdx),
-        boundSi = utilityObject->MIN(data.numSeqs,mpiEndIdx);
+        boundSi = utilityObject->MIN(data.numSeqs,mpiEndIdx),
+        delta = utilityObject->MAX(0, iStart); //TODO: comment
 
+    #ifdef DEBUG
     cout 	<< "Proc #" << r << " initSi: "<< initSi << " boundSi: " << boundSi << endl
     		<< "mpiStartIdx: " << mpiStartIdx << " mpiEndIdx: " << mpiEndIdx << endl;
+   	#endif
 
 	for (si = initSi; si < boundSi; si++) {
-	    //n = alignPtr->getSeqLength(si + 1);
-	    n = seqArray[translateIndex(si+1, initSi+1)].size()-1;
+	    n = seqArray[translateIndex(si+1, delta+1)].size()-1;
 	    len1 = 0;
 	    for (i = 1; i <= n; i++) {
-	    //res = (*_ptrToSeqArray)[si + 1][i];	
-	      res = seqArray[translateIndex(si + 1, initSi+1)][i];
+	      res = seqArray[translateIndex(si + 1, delta+1)][i];
 	      if ((res != data.gapPos1) && (res != data.gapPos2)) {
 	        len1++;
 	      }
@@ -95,19 +95,16 @@ void ParallelAlgo::DoFullPairwiseAlignment() {
 		    len2;
 																
 		for (sj = initSj; sj < boundSj; sj++) {
-			//m = alignPtr->getSeqLength(sj + 1);
-			m = seqArray[translateIndex(sj + 1, initSi+1)].size()-1;
+			m = seqArray[translateIndex(sj + 1, delta+1)].size()-1;
 		          
 		  	if (n == 0 || m == 0) {
-		  		//THINK!
 		 		distMat.push_back(distMatrixRecord(si+1, sj+1,1.0));
 		 		continue;
   			}
 
 	      	len2 = 0;
 	      	for (i = 1; i <= m; i++) {
-	        	//res = (*_ptrToSeqArray)[sj + 1][i];
-	        	res = seqArray[translateIndex(sj + 1, initSi+1)][i];
+	        	res = seqArray[translateIndex(sj + 1, delta+1)][i];
 	        	if ((res != data.gapPos1) && (res != data.gapPos2)) {
 	          		len2++;
 	        	}
@@ -116,8 +113,8 @@ void ParallelAlgo::DoFullPairwiseAlignment() {
      		data.UpdateGapOpenAndExtend(_gapOpen, _gapExtend, n, m);
             
       		// align the sequences
-    		seq1 = translateIndex(si + 1, initSi+1);
-      		seq2 = translateIndex(sj + 1, initSi+1);
+    		seq1 = translateIndex(si + 1, delta+1);
+      		seq2 = translateIndex(sj + 1, delta+1);
 
 		    _ptrToSeq1 = &seqArray[seq1];
 		    _ptrToSeq2 = &seqArray[seq2];
@@ -126,10 +123,10 @@ void ParallelAlgo::DoFullPairwiseAlignment() {
 			MMAlgo mmalgo(&data);
 			
 			#ifdef DEBUG
-				cout << "Starting align: " << seq1 << ":" <<seq2 << endl;
+			cout << "[" << r << "]" << "Starting align: " << seq1 << ":" <<seq2 << endl;
 			#endif
 
-    		swalgo.Pass(_ptrToSeq1, _ptrToSeq2, n, m, _gapOpen, _gapExtend);
+			swalgo.Pass(_ptrToSeq1, _ptrToSeq2, n, m, _gapOpen, _gapExtend);
                                
     		//use Myers and Miller to align two sequences 
 			maxScore = mmalgo.Pass(swalgo.sb1 - 1, swalgo.sb2 - 1, swalgo.se1 - swalgo.sb1 + 1, swalgo.se2 - swalgo.sb2 + 1,
@@ -214,8 +211,8 @@ void ParallelAlgo::recieveSequences()
     jStart = bounds[2];
     jEnd = bounds[3];
 
-    initSi = utilityObject->MAX(0, iStart); //TODO
-    int  boundSi = utilityObject->MIN(data.numSeqs,iEnd);
+    int initSi = utilityObject->MAX(0, iStart),
+    	boundSi = utilityObject->MIN(data.numSeqs,iEnd);
   
   	// [0] = [initSi+1]
     // [1] = [initSi+1+1]

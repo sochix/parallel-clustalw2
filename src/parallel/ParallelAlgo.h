@@ -54,7 +54,6 @@ class ParallelAlgo
 		
 
 		//data
-		int initSi;
 		static clustalw::SeqArray seqArray;
 		static int iStart;
     	static int iEnd;
