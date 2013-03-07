@@ -41,6 +41,8 @@ int main(int argc, char **argv)
    
     int r, ntasks;
 
+    double startTime = 0;
+
     MPI_Comm_rank(MPI_COMM_WORLD, &r);
 
     userParameters = new UserParameters(false);
@@ -48,8 +50,8 @@ int main(int argc, char **argv)
 
     if (r == 0)
     {
-        // userParameters = new UserParameters(false);
-        // utilityObject = new Utility();   
+        startTime = MPI_Wtime(); //get start time
+
         subMatrix = new SubMatrix();
         statsObject = new Stats();
         ClustalWResources *resources = ClustalWResources::Instance();
@@ -109,6 +111,11 @@ int main(int argc, char **argv)
     {                  
         ParallelAlgo parAlgo;
         parAlgo.DoFullPairwiseAlignment();
+    }
+
+    if (r == 0) {
+        double endTime = MPI_Wtime();
+        cout << "Elapsed time: " << setprecision(10) << endTime - startTime << " sec" << endl;
     }
 
     MPI_Finalize();
