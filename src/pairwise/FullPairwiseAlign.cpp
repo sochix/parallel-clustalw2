@@ -58,13 +58,14 @@ void FullPairwiseAlign::recieveDistMatrix(DistMatrix* distMat){
 
   for (int proc=1; proc<procNum; proc++) {
     int size;
-    MPI_Recv(&size, 1, MPI_INT, proc, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    MPI_Status status;
+    MPI_Recv(&size, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
     #ifdef DEBUG
       cout << "Size of distMat: " << size << endl;
     #endif
 
     float* unwindedDistMat = new float[size];
-    MPI_Recv(unwindedDistMat, size, MPI_FLOAT, proc, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    MPI_Recv(unwindedDistMat, size, MPI_FLOAT, status.MPI_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
     for (int i=0; i<size; i+=3) {
       int si = (int)unwindedDistMat[i],
