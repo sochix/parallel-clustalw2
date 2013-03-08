@@ -76,16 +76,16 @@ void FullPairwiseAlign::recieveDistMatrix(DistMatrix* distMat){
       distMat->SetAt(si, sj, _score);    
       distMat->SetAt(sj, si, _score);
       
-      if(userParameters->getDisplayInfo()) {
-          utilityObject->info("[%d]Sequences (%d:%d) Aligned. Score:  %d", proc, si, sj, (int)(100.f - (_score*100.f)));     
-      }
+      // if(userParameters->getDisplayInfo()) {
+      //     utilityObject->info("[%d]Sequences (%d:%d) Aligned. Score:  %d", proc, si, sj, (int)(100.f - (_score*100.f)));     
+      // }
     }
     delete[] unwindedDistMat;               
   }
   return;
 }
 
-void FullPairwiseAlign::scheduleSequences(int numOfSeq) {
+void FullPairwiseAlign::scheduleSequences(int numOfSeq, int* bounds) {
   //TODO: should be improved!
   int procNum;
   MPI_Comm_size( MPI_COMM_WORLD, &procNum ) ;
@@ -93,26 +93,75 @@ void FullPairwiseAlign::scheduleSequences(int numOfSeq) {
   
   isInteger = true;
 
-  if (numOfSeq % procNum == 0)  {
-    portionPerProc = numOfSeq/procNum;
-  } else {
-    isInteger = false;
-    portionPerProc = numOfSeq/procNum;
-    lastProcPortion = numOfSeq - portionPerProc*(procNum-1);
+  int jStart = bounds[2],
+      jEnd = bounds[3];
+  int* seqHist = new int[numOfSeq];
+  
+  int sum = 0;
+  //fill number of subseq to be aligned for aligning of one seq in array
+  //      &&
+  //calculate the sum of seq to be aligned 
+  cout << "Histogram of seq" <<  endl;
+  for (int i=0; i<numOfSeq; i++) {
+    int initSj = utilityObject->MAX(i+1, jStart+1),
+        boundSj = utilityObject->MIN(numOfSeq,jEnd);
+    seqHist[i] = boundSj - initSj;
+    sum += seqHist[i];
+  }
+  cout << endl;
+  
+  //TODO: should be moved soon
+  cout << "Count of sequences: " << numOfSeq << endl;
+  cout << "Count of sequences to be aligned: " << sum << endl;
+  //calculate the average number of seq per proc
+
+  int averageNumOfSeqPerProc = sum / procNum;
+  cout << "Average per proc: " << averageNumOfSeqPerProc << endl;
+  int* portionPerProc = new int[procNum+1]; //+1 for saving initial index
+  portionPerProc[0] = 0; //start index
+  //calculate portion per proc
+  int temporalSum = 0;
+  int procIdx = 1;
+
+  cout << "Portion per proc" << endl;
+  for (int i=0; i<numOfSeq; i++) {
+    temporalSum += seqHist[i];
+    if (temporalSum >= averageNumOfSeqPerProc) {
+      portionPerProc[procIdx++] = i;
+      cout << "Proc#" << procIdx-1 << " should align " 
+           << portionPerProc[procIdx-1] - portionPerProc[procIdx-2] 
+           << " temporalSum = " << temporalSum << endl;
+      temporalSum = 0;
+    }
   }
 
-  cout << "Scheduler information" << endl;
-  cout << "numOfSeq: " << numOfSeq << endl;
-  cout << "Num of procs: " << procNum << endl;
-  cout << "isInteger: " << isInteger << endl;
-  cout << "portion of seq per proc: " << portionPerProc << endl;
-  cout << "last proc portion: " << lastProcPortion << endl;
-  int schedule[3];
-  schedule[0] = (int)isInteger;
-  schedule[1] = portionPerProc;
-  schedule[2] = lastProcPortion;
+  //keep in mind that procNum also have one minus
+  if (procIdx - procNum == 0) {
+    portionPerProc[procNum] = numOfSeq;
+    cout  << "Proc#" << procNum << " should align " 
+          << portionPerProc[procNum] - portionPerProc[procNum-1] << endl;
+  }
 
-  MPI_Bcast(&schedule, 3, MPI_INT, 0, MPI_COMM_WORLD);
+  // if (numOfSeq % procNum == 0)  {
+  //   portionPerProc = numOfSeq/procNum;
+  // } else {
+  //   isInteger = false;
+  //   portionPerProc = numOfSeq/procNum;
+  //   lastProcPortion = numOfSeq - portionPerProc*(procNum-1);
+  // }
+
+  // cout << "Scheduler information" << endl;
+  // cout << "numOfSeq: " << numOfSeq << endl;
+  // cout << "Num of procs: " << procNum << endl;
+  // cout << "isInteger: " << isInteger << endl;
+  // cout << "portion of seq per proc: " << portionPerProc << endl;
+  // cout << "last proc portion: " << lastProcPortion << endl;
+  // int schedule[3];
+  // schedule[0] = (int)isInteger;
+  // schedule[1] = portionPerProc;
+  // schedule[2] = lastProcPortion;
+
+  MPI_Bcast(portionPerProc, procNum+1, MPI_INT, 0, MPI_COMM_WORLD);
 }
 
 void FullPairwiseAlign::sendSequences(Alignment* alignPtr, int iStart, int iEnd, int jStart, int jEnd) {
@@ -132,7 +181,7 @@ void FullPairwiseAlign::sendSequences(Alignment* alignPtr, int iStart, int iEnd,
   MPI_Comm_size( MPI_COMM_WORLD, &procNum ) ;
   //send sequences
   const int NUMBER_OF_SEQ = ExtendData::numSeqs - initSi;
-  scheduleSequences(NUMBER_OF_SEQ);
+  scheduleSequences(NUMBER_OF_SEQ, bounds);
   
   MPI_Bcast(&bounds, 4, MPI_INT, 0, MPI_COMM_WORLD);
   

@@ -34,7 +34,7 @@ class FullPairwiseAlign : public PairwiseAlignBase
        void broadcastExtendData();
        void sendSequences(Alignment*, int,int,int,int);
        void recieveDistMatrix(DistMatrix*);
-       void scheduleSequences(int); //has side effect!
+       void scheduleSequences(int, int*); //has side effect!
 };
 
 }

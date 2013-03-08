@@ -17,9 +17,7 @@ int ParallelAlgo::iEnd;
 int ParallelAlgo::jStart;
 int ParallelAlgo::jEnd;
 
-bool ParallelAlgo::isInteger;
-int ParallelAlgo::portionPerProc;
-int ParallelAlgo::lastProcPortion;
+int* ParallelAlgo::portionPerProc;
 
 
 void ParallelAlgo::DoFullPairwiseAlignment() {
@@ -51,23 +49,25 @@ void ParallelAlgo::DoFullPairwiseAlignment() {
 
     int r,
 		procNum;
-	MPI_Comm_rank(MPI_COMM_WORLD, &r);
+	  MPI_Comm_rank(MPI_COMM_WORLD, &r);
   	MPI_Comm_size(MPI_COMM_WORLD, &procNum);
 
-  	int mpiStartIdx,
-  		mpiEndIdx;
+  	int mpiStartIdx = portionPerProc[r-1],
+  		  mpiEndIdx = portionPerProc[r];
 
-  	if (iStart != 0) {
-  		mpiStartIdx = iStart*r; //TODO: think	
-  	} else {
-  		mpiStartIdx = (r-1)*portionPerProc;
-  	}  	
+    cout << "Proc#" << r << " startIdx: " << mpiStartIdx << ", endIdx: " << mpiEndIdx << endl;
 
-  	if ((isInteger) || (r != procNum-1)) {
-  		mpiEndIdx = mpiStartIdx+portionPerProc;	
-  	} else {
-  		mpiEndIdx = mpiStartIdx+lastProcPortion;
-  	}
+  	// if (iStart != 0) {
+  	// 	mpiStartIdx = iStart*r; //TODO: think	
+  	// } else {
+  	// 	mpiStartIdx = (r-1)*portionPerProc;
+  	// }  	
+
+  	// if ((isInteger) || (r != procNum-1)) {
+  	// 	mpiEndIdx = mpiStartIdx+portionPerProc;	
+  	// } else {
+  	// 	mpiEndIdx = mpiStartIdx+lastProcPortion;
+  	// }
   	
 
     int initSi = utilityObject->MAX(0, mpiStartIdx),
@@ -196,13 +196,13 @@ int ParallelAlgo::translateIndex(int i, int delta)
 
 void ParallelAlgo::recieveSequences()
 {
-	int schedule[3];
-	MPI_Bcast(&schedule, 3, MPI_INT, 0, MPI_COMM_WORLD);
-	
-	isInteger = (bool)schedule[0];
-	portionPerProc = schedule[1],
-	lastProcPortion = schedule[2];
+  int procNum;
+  MPI_Comm_size( MPI_COMM_WORLD, &procNum );
 
+  //TODO: memory leak will be 
+	portionPerProc = new int[procNum];
+	MPI_Bcast(portionPerProc, procNum, MPI_INT, 0, MPI_COMM_WORLD);
+	
 	int bounds[4];
 	MPI_Bcast(&bounds, 4, MPI_INT, 0, MPI_COMM_WORLD);
         

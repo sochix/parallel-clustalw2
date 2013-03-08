@@ -60,10 +60,8 @@ class ParallelAlgo
     	static int jStart;
     	static int jEnd;
     	static ExternalData data;
-
-    	static bool isInteger;
-		static int portionPerProc;
-		static int lastProcPortion;
+    	static int* portionPerProc;
+    	
 
 };
 
