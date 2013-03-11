@@ -19,6 +19,8 @@ float ExtendData::pwGapExtend;
 int 	ExtendData::maxAlnLength;
 int		ExtendData::numSeqs;
 
+MPI_Datatype ExtendData::mpi_dmRecord_type;
+
 void ExtendData::InitSubMatrixParameters(SubMatrix* subMat)
 {
 		PairScaleValues scaleValues;

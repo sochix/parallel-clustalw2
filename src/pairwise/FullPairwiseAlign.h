@@ -29,6 +29,7 @@ class FullPairwiseAlign : public PairwiseAlignBase
         int isInteger;
         int portionPerProc;
         int lastProcPortion;        
+        int maxSeqCount;
         /* Functions */
        //MPI
        void broadcastExtendData();

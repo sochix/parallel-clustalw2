@@ -9,6 +9,7 @@
 #include "FullPairwiseAlign.h"
 #include <math.h>
 #include <mpi.h>
+#include <memory>
 
 namespace clustalw
 {
@@ -56,34 +57,38 @@ void FullPairwiseAlign::recieveDistMatrix(DistMatrix* distMat){
   int procNum;
   MPI_Comm_size(MPI_COMM_WORLD, &procNum);
 
-  for (int proc=1; proc<procNum; proc++) {
-    int size;
-    MPI_Status status;
-    MPI_Recv(&size, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-    #ifdef DEBUG
-      cout << "Size of distMat: " << size << endl;
-    #endif
+  vector<dmRecord> emptyBuf(maxSeqCount);
+  vector<dmRecord> recvBuf(maxSeqCount*procNum);
 
-    float* unwindedDistMat = new float[size];
-    MPI_Recv(unwindedDistMat, size, MPI_FLOAT, status.MPI_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  //cout << "Before: \tRow: " << recvBuf[maxSeqCount].col << "\tCol: " << recvBuf[maxSeqCount].row << "\tVal: " << recvBuf[maxSeqCount].val << endl;
+  //TODO: should be MPI_gatherv
+  MPI_Gather(emptyBuf.data(), maxSeqCount, ExtendData::mpi_dmRecord_type, recvBuf.data(), maxSeqCount, ExtendData::mpi_dmRecord_type, 0, MPI_COMM_WORLD);
+  MPI_Barrier(MPI_COMM_WORLD);
+  
+  //cout << "After: \tRow: " << recvBuf[maxSeqCount].col << "\tCol: " << recvBuf[maxSeqCount].row << "\tVal: " << recvBuf[maxSeqCount].val << endl;
+  
+  //i = size, because we drop master data
+  for (int i=maxSeqCount; i<maxSeqCount*procNum; i++) {
+      int si = recvBuf[i].col,
+          sj = recvBuf[i].row;
+      float _score = recvBuf[i].val;
 
-    for (int i=0; i<size; i+=3) {
-      int si = (int)unwindedDistMat[i],
-          sj = (int)unwindedDistMat[i+1];
+   //   cout << "\tRow: " << si << "\tCol: " << sj << "\tVal: " << _score << endl;
 
-      float _score = unwindedDistMat[i+2];
-      
-      distMat->SetAt(si, sj, _score);    
-      distMat->SetAt(sj, si, _score);
+      if ((si != -1) && (sj != -1)) { 
+    //    cout << "DistMat(" << si << ", " << sj << ") = " << _score << endl;
+        
+        distMat->SetAt(si, sj, _score);    
+        distMat->SetAt(sj, si, _score);
       
       // if(userParameters->getDisplayInfo()) {
       //     utilityObject->info("[%d]Sequences (%d:%d) Aligned. Score:  %d", proc, si, sj, (int)(100.f - (_score*100.f)));     
-      // }
-    }
-    delete[] unwindedDistMat;               
+      // }        
+      }      
+    }  
+    return;
   }
-  return;
-}
+  
 
 void FullPairwiseAlign::scheduleSequences(int numOfSeq, int* bounds) {
   //TODO: should be improved!
@@ -117,6 +122,13 @@ void FullPairwiseAlign::scheduleSequences(int numOfSeq, int* bounds) {
 
   int averageNumOfSeqPerProc = sum / procNum;
   cout << "Average per proc: " << averageNumOfSeqPerProc << endl;
+
+  //simply increase averageNumOfSeqPerProc for 25%
+  maxSeqCount = averageNumOfSeqPerProc + averageNumOfSeqPerProc*0.25;
+  //TODO: should be refactored
+  MPI_Bcast(&maxSeqCount, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+  cout << "Max sequences count: " << maxSeqCount << endl;
   int* portionPerProc = new int[procNum+1]; //+1 for saving initial index
   portionPerProc[0] = 0; //start index
   //calculate portion per proc
@@ -141,25 +153,6 @@ void FullPairwiseAlign::scheduleSequences(int numOfSeq, int* bounds) {
     cout  << "Proc#" << procNum << " should align " 
           << portionPerProc[procNum] - portionPerProc[procNum-1] << endl;
   }
-
-  // if (numOfSeq % procNum == 0)  {
-  //   portionPerProc = numOfSeq/procNum;
-  // } else {
-  //   isInteger = false;
-  //   portionPerProc = numOfSeq/procNum;
-  //   lastProcPortion = numOfSeq - portionPerProc*(procNum-1);
-  // }
-
-  // cout << "Scheduler information" << endl;
-  // cout << "numOfSeq: " << numOfSeq << endl;
-  // cout << "Num of procs: " << procNum << endl;
-  // cout << "isInteger: " << isInteger << endl;
-  // cout << "portion of seq per proc: " << portionPerProc << endl;
-  // cout << "last proc portion: " << lastProcPortion << endl;
-  // int schedule[3];
-  // schedule[0] = (int)isInteger;
-  // schedule[1] = portionPerProc;
-  // schedule[2] = lastProcPortion;
 
   MPI_Bcast(portionPerProc, procNum+1, MPI_INT, 0, MPI_COMM_WORLD);
 }

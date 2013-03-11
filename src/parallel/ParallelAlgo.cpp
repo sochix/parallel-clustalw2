@@ -1,9 +1,11 @@
 #include <mpi.h>
 #include <iostream>
+#include <memory>
 #include "../alignment/Alignment.h"
 #include "ParallelAlgo.h"
 #include "../pairwise/I_MMAlgo.h"
 #include "../pairwise/I_SWAlgo.h"
+#include "../pairwise/I_ExtendData.h"
 
 //#define DEBUG
 
@@ -18,6 +20,7 @@ int ParallelAlgo::jStart;
 int ParallelAlgo::jEnd;
 
 int* ParallelAlgo::portionPerProc;
+int ParallelAlgo::maxSeqCount;
 
 
 void ParallelAlgo::DoFullPairwiseAlignment() {
@@ -56,19 +59,6 @@ void ParallelAlgo::DoFullPairwiseAlignment() {
   		  mpiEndIdx = portionPerProc[r];
 
     cout << "Proc#" << r << " startIdx: " << mpiStartIdx << ", endIdx: " << mpiEndIdx << endl;
-
-  	// if (iStart != 0) {
-  	// 	mpiStartIdx = iStart*r; //TODO: think	
-  	// } else {
-  	// 	mpiStartIdx = (r-1)*portionPerProc;
-  	// }  	
-
-  	// if ((isInteger) || (r != procNum-1)) {
-  	// 	mpiEndIdx = mpiStartIdx+portionPerProc;	
-  	// } else {
-  	// 	mpiEndIdx = mpiStartIdx+lastProcPortion;
-  	// }
-  	
 
     int initSi = utilityObject->MAX(0, mpiStartIdx),
         boundSi = utilityObject->MIN(data.numSeqs,mpiEndIdx),
@@ -162,26 +152,36 @@ void ParallelAlgo::DoFullPairwiseAlignment() {
 	return;
 }
 
-void ParallelAlgo::sendDistMat(std::vector<distMatrixRecord>* distMat) {
+void ParallelAlgo::sendDistMat(std::vector<dmRecord>* distMat) {
 	int r;
 	MPI_Comm_rank(MPI_COMM_WORLD, &r);
 	cout << "Proc #" << r << " has " << distMat->size() << " aligned seq." << endl;
+  cout << "Max seq count is " << maxSeqCount << endl;
 
-	int size = distMat->size() * 3;
-    MPI_Send(&size, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
+  if (distMat->size() > maxSeqCount) {
+    cout << "Error during scheduling maxSeqCount!" << endl;
+    exit(-99);
+  }
 
-    //temporal solution, should be MPI_Type
-    float* unwindedMat  = new float[size]; 
-    for (int i=0; i<distMat->size(); i++) {
-    	unwindedMat[i*3+0] = (*distMat)[i].row;
-    	unwindedMat[i*3+1] = (*distMat)[i].col;
-    	unwindedMat[i*3+2] = (*distMat)[i].val;
+  vector<dmRecord> unwindedMat (maxSeqCount);
+  
+  //cout << "Worker#"<< r <<" before: \tRow: " << (*distMat)[0].row << "\tCol: " << (*distMat)[0].col << "\tVal: " << (*distMat)[0].val << endl;
+  for (int i=0; i<distMat->size(); i++) {
+    if (((*distMat)[i].row < 0) || ((*distMat)[i].col < 0)) {
+      cout << "Invalid data in sender!" << endl;
+      exit(-99);
     }
 
-    MPI_Send(unwindedMat, size, MPI_FLOAT, 0, 0, MPI_COMM_WORLD);
+  	unwindedMat[i].row = (*distMat)[i].row;
+    unwindedMat[i].col = (*distMat)[i].col;
+    unwindedMat[i].val = (*distMat)[i].val;
+  }
+ // cout << "Worker#" << r <<" after: \tRow: " << unwindedMat[0].row << "\tCol: " << unwindedMat[0].col << "\tVal: " << unwindedMat[0].val << endl;
 
-    delete[] unwindedMat;
-	return;
+  MPI_Gather(unwindedMat.data(), maxSeqCount, ExtendData::mpi_dmRecord_type, NULL, maxSeqCount, ExtendData::mpi_dmRecord_type, 0, MPI_COMM_WORLD);
+  MPI_Barrier(MPI_COMM_WORLD);
+	
+  return;
 }
 
 int ParallelAlgo::translateIndex(int i, int delta)
@@ -199,6 +199,9 @@ void ParallelAlgo::recieveSequences()
   int procNum;
   MPI_Comm_size( MPI_COMM_WORLD, &procNum );
 
+
+  //TODO: should be refactored
+  MPI_Bcast(&maxSeqCount, 1, MPI_INT, 0, MPI_COMM_WORLD);
   //TODO: memory leak will be 
 	portionPerProc = new int[procNum];
 	MPI_Bcast(portionPerProc, procNum, MPI_INT, 0, MPI_COMM_WORLD);
@@ -212,7 +215,7 @@ void ParallelAlgo::recieveSequences()
     jEnd = bounds[3];
 
     int initSi = utilityObject->MAX(0, iStart),
-    	boundSi = utilityObject->MIN(data.numSeqs,iEnd);
+    	   boundSi = utilityObject->MIN(data.numSeqs,iEnd);
   
   	// [0] = [initSi+1]
     // [1] = [initSi+1+1]

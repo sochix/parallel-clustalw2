@@ -32,13 +32,28 @@ namespace clustalw
     DebugLog* logObject;
     Stats* statsObject;
 }
+
 using namespace std;
 using namespace clustalw;
 
 int main(int argc, char **argv)
 {      
     MPI_Init(&argc, &argv);  
-   
+    //TODO: should be extracted to method
+    //commit MPI type
+      const int nitems=3;
+      int          blocklengths[3] = {1,1,1};
+      MPI_Datatype types[3] = {MPI_INT, MPI_INT, MPI_FLOAT};    
+      MPI_Aint     offsets[3];
+
+      offsets[0] = offsetof(dmRecord, row);
+      offsets[1] = offsetof(dmRecord, col);
+      offsets[2] = offsetof(dmRecord, val);
+
+      MPI_Type_create_struct(nitems, blocklengths, offsets, types, &ExtendData::mpi_dmRecord_type);
+      MPI_Type_commit(&ExtendData::mpi_dmRecord_type);
+
+
     int r, ntasks;
 
     double startTime = 0;

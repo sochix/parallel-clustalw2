@@ -2,6 +2,7 @@
 #define __PARALLELALGO_H__
 
 #include "../alignment/Alignment.h"
+#include "../pairwise/I_ExtendData.h"
 
 struct ExternalData {
 		//SubMatrixParameters
@@ -24,18 +25,6 @@ struct ExternalData {
 	void UpdateGapOpenAndExtend(int&, int&, int, int);	
 };
 
-struct distMatrixRecord {
-	int row;
-	int col;
-	double val;
-
-	distMatrixRecord(int r, int c, double v):
-	row(r),
-	col(c),
-	val(v) {		
-	}
-};
-
 class ParallelAlgo
 {
 	public:
@@ -46,7 +35,7 @@ class ParallelAlgo
 		//MPI
 		void recieveExtendData();
 		void recieveSequences();
-		void sendDistMat(std::vector<distMatrixRecord>*);
+		void sendDistMat(std::vector<clustalw::dmRecord>*);
 
 		//Helpers
 		int translateIndex(int, int);
@@ -61,6 +50,8 @@ class ParallelAlgo
     	static int jEnd;
     	static ExternalData data;
     	static int* portionPerProc;
+		//TODO: should be const
+    	static int maxSeqCount;
     	
 
 };
