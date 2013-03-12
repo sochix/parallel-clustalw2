@@ -32,6 +32,9 @@ class ExtendData
 		static void InitUserParameters(clustalw::UserParameters* userParameters);
 		static void InitAlignmentParameters(clustalw::Alignment* alignPtr);
 		static void UpdateGapOpenAndExtend(int&, int&, int, int);	
+
+		//MPI
+		static const unsigned short int MASTER = 0;
 	
 	private:
 		ExtendData(const ExtendData&) {};

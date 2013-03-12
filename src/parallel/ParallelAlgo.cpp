@@ -196,15 +196,14 @@ void ParallelAlgo::recieveSequences()
   int procNum;
   MPI_Comm_size( MPI_COMM_WORLD, &procNum );
 
-
-  //TODO: should be refactored
-  MPI_Bcast(&maxSeqCount, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  int bounds[4];
+  MPI_Bcast(&bounds, 4, MPI_INT, 0, MPI_COMM_WORLD);
+  
   //TODO: memory leak will be 
 	portionPerProc = new int[procNum];
 	MPI_Bcast(portionPerProc, procNum, MPI_INT, 0, MPI_COMM_WORLD);
 	
-	int bounds[4];
-	MPI_Bcast(&bounds, 4, MPI_INT, 0, MPI_COMM_WORLD);
+	
         
     iStart = bounds[0];
     iEnd = bounds[1];

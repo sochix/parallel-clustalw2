@@ -17,25 +17,19 @@ namespace clustalw
 class FullPairwiseAlign : public PairwiseAlignBase
 {
     public:
-        /* Functions */
-        FullPairwiseAlign() {};
-		virtual ~FullPairwiseAlign(){};
-        virtual void pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, int iStart, 
+      /* Functions */
+      FullPairwiseAlign() {};
+		  virtual ~FullPairwiseAlign(){};
+      virtual void pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, int iStart, 
                                    int iEnd, int jStart, int jEnd); 
-        /* Attributes */
-
+      
     private:
-        /* Attributes */
-        int isInteger;
-        int portionPerProc;
-        int lastProcPortion;        
-        int maxSeqCount;
-        /* Functions */
-       //MPI
-       void broadcastExtendData();
-       void sendSequences(Alignment*, int,int,int,int);
-       void recieveDistMatrix(DistMatrix*);
-       void scheduleSequences(int, int*); //has side effect!
+      /* Functions */
+      //MPI
+      void BroadcastExtendData();
+      void BroadcastSequences(Alignment*, int,int,int,int);
+      void GatherDistMatrix(DistMatrix*);
+      void SchedulePortionOfSequencesForEachProc(const int, int*); //has side effect!
 };
 
 }
