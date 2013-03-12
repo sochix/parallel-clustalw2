@@ -156,13 +156,11 @@ void FullPairwiseAlign::SchedulePortionOfSequencesForEachProc(const int numOfSeq
         temporalSum = 0;
       }
     }
-    //cout <<  "============: " << averageNumOfSeqPerProc << endl;
     averageNumOfSeqPerProc--; //TODO: think!!!    
   }
   
   //HACK: expand last proc
   portionPerProc[countOfAllProcs-1] = numOfSeq - 1;
-
   averageNumOfSeqPerProc++; //TODO: think!!!    
 
   cout << "\tAverage per proc after iterating: " << averageNumOfSeqPerProc << endl;

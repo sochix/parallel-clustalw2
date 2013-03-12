@@ -41,7 +41,6 @@ class ParallelAlgo
 		int translateIndex(int, int);
 		float tracePath(int, int, const std::vector<int>&, int printPtr, const std::vector<int>*,  const std::vector<int>*);
 		
-
 		//data
 		static clustalw::SeqArray seqArray;
 		static int iStart;

@@ -199,43 +199,30 @@ void ParallelAlgo::recieveSequences()
   int bounds[4];
   MPI_Bcast(&bounds, 4, MPI_INT, 0, MPI_COMM_WORLD);
   
+  iStart = bounds[0];
+  iEnd = bounds[1];
+  jStart = bounds[2];
+  jEnd = bounds[3];
+  
   //TODO: memory leak will be 
 	portionPerProc = new int[procNum];
 	MPI_Bcast(portionPerProc, procNum, MPI_INT, 0, MPI_COMM_WORLD);
-	
-	
-        
-    iStart = bounds[0];
-    iEnd = bounds[1];
-    jStart = bounds[2];
-    jEnd = bounds[3];
 
-    int initSi = utilityObject->MAX(0, iStart),
-    	   boundSi = utilityObject->MIN(data.numSeqs,iEnd);
+  const int initSi = utilityObject->MAX(0, iStart),
+            NUMBER_OF_SEQ = data.numSeqs - initSi;
   
-  	// [0] = [initSi+1]
-    // [1] = [initSi+1+1]
-    // [2] = [initSi+1+1+1]
-    //recieve sequences
-    const int NUMBER_OF_SEQ = data.numSeqs - initSi;
+	// [0] = [initSi+1]
+  // [1] = [initSi+1+1]
+  // [2] = [initSi+1+1+1]
+  //recieve sequences
+  for (int si=initSi; si<initSi+NUMBER_OF_SEQ; si++) {
+    int size;
+    MPI_Bcast(&size, 1, MPI_INT, 0, MPI_COMM_WORLD);	
 
-    for (int si=initSi; si<initSi+NUMBER_OF_SEQ; si++) {
-        
-        int size;
-        MPI_Bcast(&size, 1, MPI_INT, 0, MPI_COMM_WORLD);	
-
-	 	#ifdef DEBUG
-	        cout << "[ALGO] Size: "<< size << endl;
-	    #endif
-
-        std::vector<int> seq(size);
-        int* seqPtr = seq.data();
-
-        MPI_Bcast(seqPtr, size, MPI_INT, 0, MPI_COMM_WORLD);              
-        
-        //TODO: maybe memory leak, change to auto_ptr
-        seqArray.push_back(seq);
-    }
+    std::vector<int> seq(size);
+    MPI_Bcast(seq.data(), size, MPI_INT, 0, MPI_COMM_WORLD);              
+    seqArray.push_back(seq);
+  }
 }
 
 void ParallelAlgo::recieveExtendData() {
