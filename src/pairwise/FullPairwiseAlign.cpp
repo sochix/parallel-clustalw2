@@ -40,11 +40,14 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
         return;
       }
 
+      double startTime = MPI_Wtime();
+
       broadcastExtendData();
       sendSequences(alignPtr, iStart, iEnd, jStart, jEnd);
-      recieveDistMatrix(distMat);     
-
+      recieveDistMatrix(distMat);   
       
+      double endTime = MPI_Wtime();
+      cout << "Elapsed time for FullPairwiseAlign: " << setprecision(10) << endTime - startTime << " sec" << endl;       
     }
     catch(const exception& e)
     {
