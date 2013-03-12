@@ -156,29 +156,26 @@ void ParallelAlgo::sendDistMat(std::vector<dmRecord>* distMat) {
 	int r;
 	MPI_Comm_rank(MPI_COMM_WORLD, &r);
 	cout << "Proc #" << r << " has " << distMat->size() << " aligned seq." << endl;
-  cout << "Max seq count is " << maxSeqCount << endl;
-
-  if (distMat->size() > maxSeqCount) {
-    cout << "Error during scheduling maxSeqCount!" << endl;
-    exit(-99);
-  }
-
-  vector<dmRecord> unwindedMat (maxSeqCount);
   
-  //cout << "Worker#"<< r <<" before: \tRow: " << (*distMat)[0].row << "\tCol: " << (*distMat)[0].col << "\tVal: " << (*distMat)[0].val << endl;
+   //cout << "Worker#"<< r <<" before: \tRow: " << (*distMat)[0].row << "\tCol: " << (*distMat)[0].col << "\tVal: " << (*distMat)[0].val << endl;
+  int size = distMat->size();
+  MPI_Gather(&size, 1, MPI_INT, NULL, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Barrier(MPI_COMM_WORLD);
+
+  vector<dmRecord> unwindedMat(size);
   for (int i=0; i<distMat->size(); i++) {
     if (((*distMat)[i].row < 0) || ((*distMat)[i].col < 0)) {
       cout << "Invalid data in sender!" << endl;
       exit(-99);
     }
-
-  	unwindedMat[i].row = (*distMat)[i].row;
+    unwindedMat[i].row = (*distMat)[i].row;
     unwindedMat[i].col = (*distMat)[i].col;
     unwindedMat[i].val = (*distMat)[i].val;
   }
- // cout << "Worker#" << r <<" after: \tRow: " << unwindedMat[0].row << "\tCol: " << unwindedMat[0].col << "\tVal: " << unwindedMat[0].val << endl;
 
-  MPI_Gather(unwindedMat.data(), maxSeqCount, ExtendData::mpi_dmRecord_type, NULL, maxSeqCount, ExtendData::mpi_dmRecord_type, 0, MPI_COMM_WORLD);
+   // cout << "Worker#" << r <<" after: \tRow: " << unwindedMat[0].row << "\tCol: " << unwindedMat[0].col << "\tVal: " << unwindedMat[0].val << endl;
+  MPI_Gatherv(unwindedMat.data(), size, ExtendData::mpi_dmRecord_type, NULL, NULL, NULL , ExtendData::mpi_dmRecord_type, 0, MPI_COMM_WORLD);
+  //MPI_Gather(unwindedMat.data(), maxSeqCount, ExtendData::mpi_dmRecord_type, NULL, maxSeqCount, ExtendData::mpi_dmRecord_type, 0, MPI_COMM_WORLD);
   MPI_Barrier(MPI_COMM_WORLD);
 	
   return;

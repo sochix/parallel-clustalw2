@@ -10,6 +10,7 @@
 #include <math.h>
 #include <mpi.h>
 #include <memory>
+#include <numeric>
 
 namespace clustalw
 {
@@ -57,23 +58,45 @@ void FullPairwiseAlign::recieveDistMatrix(DistMatrix* distMat){
   int procNum;
   MPI_Comm_size(MPI_COMM_WORLD, &procNum);
 
-  vector<dmRecord> emptyBuf(maxSeqCount);
-  vector<dmRecord> recvBuf(maxSeqCount*procNum);
+  vector<dmRecord> emptyBuf(0);
+  int emptySize = 0;
+  vector<int> recieveCounts(procNum);
+  vector<int> displacements(procNum);
 
-  //cout << "Before: \tRow: " << recvBuf[maxSeqCount].col << "\tCol: " << recvBuf[maxSeqCount].row << "\tVal: " << recvBuf[maxSeqCount].val << endl;
-  //TODO: should be MPI_gatherv
-  MPI_Gather(emptyBuf.data(), maxSeqCount, ExtendData::mpi_dmRecord_type, recvBuf.data(), maxSeqCount, ExtendData::mpi_dmRecord_type, 0, MPI_COMM_WORLD);
+  MPI_Gather(&emptySize, 1, MPI_INT, recieveCounts.data(), 1, MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Barrier(MPI_COMM_WORLD);
+
+  #ifdef DEBUG
+    for (int i=0; i<recieveCounts.size(); i++) {
+      cout << "Proc #" << i << " will send " << recieveCounts[i] << "sequences" << endl;
+    }
+  #endif
+  displacements[0] = 0;
+  displacements[1] = 0;
+  for (int i=2; i<recieveCounts.size(); i++) {
+    displacements[i] = displacements[i-1] + recieveCounts[i-1] ;
+  }
+
+  int sum = recieveCounts[recieveCounts.size()-1] + displacements[displacements.size()-1]; //std::accumulate(recieveCounts.begin(),recieveCounts.end(),0);
+  vector<dmRecord> recvBuf(sum);
+
+  cout << "Sum: " << sum << endl;
+  // for (int i=0; i<displacements.size(); i++) {
+  //   cout << "Displacement["<< i << "]=" << displacements[i] << endl;
+  // }
+
+  MPI_Gatherv(MPI_IN_PLACE, 0, ExtendData::mpi_dmRecord_type,
+              recvBuf.data(), recieveCounts.data(), displacements.data(), ExtendData::mpi_dmRecord_type, 0, MPI_COMM_WORLD);
   MPI_Barrier(MPI_COMM_WORLD);
   
-  //cout << "After: \tRow: " << recvBuf[maxSeqCount].col << "\tCol: " << recvBuf[maxSeqCount].row << "\tVal: " << recvBuf[maxSeqCount].val << endl;
+  cout << "After: \tRow: " << recvBuf[0].col << "\tCol: " << recvBuf[0].row << "\tVal: " << recvBuf[0].val << endl;
   
-  //i = size, because we drop master data
-  for (int i=maxSeqCount; i<maxSeqCount*procNum; i++) {
+  for (int i=0; i<recvBuf.size(); i++) {
       int si = recvBuf[i].col,
           sj = recvBuf[i].row;
       float _score = recvBuf[i].val;
 
-   //   cout << "\tRow: " << si << "\tCol: " << sj << "\tVal: " << _score << endl;
+     //cout << "\tRow: " << si << "\tCol: " << sj << "\tVal: " << _score << endl;
 
       if ((si != -1) && (sj != -1)) { 
     //    cout << "DistMat(" << si << ", " << sj << ") = " << _score << endl;
