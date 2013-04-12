@@ -15,6 +15,8 @@
 namespace clustalw
 {
 
+int FullPairwiseAlign::NUMBER_OF_SEQ;
+
 void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, int iStart, int iEnd, int jStart, int jEnd)
 {
   try
@@ -43,7 +45,13 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
       double startTime = MPI_Wtime();
 
       BroadcastExtendData();
-      BroadcastSequences(alignPtr, iStart, iEnd, jStart, jEnd);
+      BroadcastSequencesAndBounds(alignPtr, iStart, iEnd, jStart, jEnd);
+
+      vector<int> numberOfSeqToAlignPerIteration(NUMBER_OF_SEQ);
+      int countOfSeq = 0;
+
+      CalculateNumbersOfSeqToAlignForeachIteration(NUMBER_OF_SEQ, jStart, jEnd, numberOfSeqToAlignPerIteration, countOfSeq);
+      SchedulePortions(numberOfSeqToAlignPerIteration, countOfSeq);
       GatherDistMatrix(distMat);   
       
       double endTime = MPI_Wtime();
@@ -105,73 +113,21 @@ void FullPairwiseAlign::GatherDistMatrix(DistMatrix* distMat){
   }
   
 
-void FullPairwiseAlign::SchedulePortionOfSequencesForEachProc(const int numOfSeq, int* bounds) {
-  //TODO: should be improved!
-  int countOfAllProcs;
-  MPI_Comm_size( MPI_COMM_WORLD, &countOfAllProcs);
-  int countOfWorkerProcs = countOfAllProcs - 1; //#0 proc is master
-  
-  int jStart = bounds[2],
-      jEnd = bounds[3];
-  
-  vector<int> numberOfSequencesToAlign(numOfSeq); //number of sequences to align for getting an align of index sequence
-  int countOfSequences = 0;
-  
+void FullPairwiseAlign::CalculateNumbersOfSeqToAlignForeachIteration(const int numOfSeq, int jStart, int jEnd, vector<int>& vec, int& countOfSequences) {
+
   const int boundSj = utilityObject->MIN(numOfSeq,jEnd);
   for (int i=0; i<numOfSeq; i++) {
     const int initSj = utilityObject->MAX(i+1, jStart+1);
-    numberOfSequencesToAlign[i] = boundSj - initSj;
-    countOfSequences += numberOfSequencesToAlign[i];
+    vec[i] = boundSj - initSj;
+    countOfSequences += vec[i];
   }
     
   cout << endl << "Scheduler data" << endl;
   cout << "\tCount of sequences: " << numOfSeq << endl;
   cout << "\tCount of sequences to be aligned:" << countOfSequences << endl;
-
-  //calculate the average number of seq per proc
-  int averageNumOfSeqPerProc = countOfSequences / countOfWorkerProcs;
-  cout << "\tAverage per proc: " << averageNumOfSeqPerProc << endl;
-
-  //calculate portion per proc
-  vector<int> portionPerProc(countOfAllProcs, 0);
-  
-  int procIdx,
-      temporalSum;
-
-  //TODO: need new method for approximation, maybe recursive binary search?
-  //iterates to find best portion for each proc
-  
-  while (procIdx != countOfAllProcs) { //procIdx != countOfAllProcs means that not all procs scheduled
-    procIdx = 1;
-    temporalSum = 0;  
-
-    for (int i=0; i<numOfSeq; i++) {
-      temporalSum += numberOfSequencesToAlign[i];
-      if (temporalSum >= averageNumOfSeqPerProc) {
-        portionPerProc[procIdx++] = i;
-        #ifdef DEBUG
-          cout << "\tProc#" << procIdx-1 << " should align " << portionPerProc[procIdx-1] - portionPerProc[procIdx-2] << " sequences" 
-                << "Temporal sum: " << temporalSum << endl;  
-        #endif
-        temporalSum = 0;
-      }
-    }
-    averageNumOfSeqPerProc--; //TODO: think!!!    
-  }
-  
-  //HACK: expand last proc
-  portionPerProc[countOfAllProcs-1] = numOfSeq - 1;
-  averageNumOfSeqPerProc++; //TODO: think!!!    
-
-  cout << "\tAverage per proc after iterating: " << averageNumOfSeqPerProc << endl;
-  for (int i=1; i<countOfAllProcs; i++) {
-    cout << "\tProc#" << i << " should align " << portionPerProc[i] - portionPerProc[i-1] << " sequences" << endl;  
-  }
-  
-  MPI_Bcast(portionPerProc.data(), countOfAllProcs, MPI_INT, 0, MPI_COMM_WORLD);
 }
 
-void FullPairwiseAlign::BroadcastSequences(Alignment* alignPtr, int iStart, int iEnd, int jStart, int jEnd) {
+void FullPairwiseAlign::BroadcastSequencesAndBounds(Alignment* alignPtr, int iStart, int iEnd, int jStart, int jEnd) {
 
   //broadcast initial bounds
   int bounds[4] = {
@@ -184,10 +140,8 @@ void FullPairwiseAlign::BroadcastSequences(Alignment* alignPtr, int iStart, int 
   MPI_Bcast(&bounds, 4, MPI_INT, 0, MPI_COMM_WORLD);
 
   int initSi = utilityObject->MAX(0, iStart);
-  const int NUMBER_OF_SEQ = ExtendData::numSeqs - initSi; //actual number of sequences to align for all procs
+  NUMBER_OF_SEQ = ExtendData::numSeqs - initSi; //actual number of sequences to align for all procs
 
-  SchedulePortionOfSequencesForEachProc(NUMBER_OF_SEQ, bounds);
-  
   //Broadcast sequences
   const SeqArray* _ptrToSeqArray = alignPtr->getSeqArray(); //This is faster! 
   
@@ -236,4 +190,70 @@ void FullPairwiseAlign::BroadcastExtendData(){
   
   return;
 }
+
+void FullPairwiseAlign::SchedulePortions(const vector<int>& vec, int count) {
+  
+  int procNum;
+  MPI_Comm_size(MPI_COMM_WORLD, &procNum);
+  procNum--;
+
+  const int k = 4; //some coefficient
+  
+  bool hasNextPortion = true;
+  int i = 1;
+  int currentSeqPortion = count / (procNum * k * i),
+      start = 0,
+      length = 0;  
+  int curProc = 0;
+  int rank = -1;
+  int iterNum = 0;
+
+  while (true) {
+    if (hasNextPortion) {
+      
+      int sum = 0,
+          idx = start;
+
+      //decrease portion size
+      if (iterNum == procNum) {
+        currentSeqPortion = count / (procNum * k * i);
+        i++;
+        iterNum = 0;
+        continue;
+      }
+      cout << "currentSeqPortion is "<<currentSeqPortion << endl;
+
+      //finding correct iterations to perform for align neede number of seq
+      while ((sum < currentSeqPortion) && (idx<vec.size())) {
+        sum += vec[idx++];
+      }
+
+      //means that all seq are aligned
+      if (idx == vec.size()) 
+        hasNextPortion = false;
+
+
+      length = idx - start;
+
+      int sendBuf[2] = {start,idx};
+
+      start = idx;
+
+      MPI_Recv(&rank, 1, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      cout << "Master process recieved request form proc #" << rank << endl;
+      MPI_Send(&sendBuf, 2, MPI_INT, rank, 0, MPI_COMM_WORLD);  
+      iterNum++;
+
+    } else {
+      int errorBuf[2] = {-1, -1};
+      MPI_Recv(&rank, 1, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      MPI_Send(&errorBuf, 2, MPI_INT, rank, 0, MPI_COMM_WORLD);
+      curProc++;
+
+      if (curProc == procNum)
+        return;
+    }    
+  }
+}
+
 }

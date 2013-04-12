@@ -36,6 +36,8 @@ class ParallelAlgo
 		void recieveExtendData();
 		void recieveSequences();
 		void sendDistMat(std::vector<clustalw::dmRecord>*);
+		bool GetNextPortion(int&, int&);
+		void AllToAllPairwiseAlignment(int start, int end);
 
 		//Helpers
 		int translateIndex(int, int);
@@ -51,8 +53,7 @@ class ParallelAlgo
     	static int* portionPerProc;
 		//TODO: should be const
     	static int maxSeqCount;
-    	
-
+    	static std::vector<clustalw::dmRecord> distMat; 	
 };
 
 

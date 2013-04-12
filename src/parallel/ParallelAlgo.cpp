@@ -19,17 +19,11 @@ int ParallelAlgo::iEnd;
 int ParallelAlgo::jStart;
 int ParallelAlgo::jEnd;
 
-int* ParallelAlgo::portionPerProc;
 int ParallelAlgo::maxSeqCount;
+vector<distMatrixRecord> ParallelAlgo::distMat;
 
-
-void ParallelAlgo::DoFullPairwiseAlignment() {
-
-	//init steps
-	recieveExtendData(); 
-	recieveSequences(); 
-
-	int len1,
+void ParallelAlgo::AllToAllPairwiseAlignment(int start, int end) {
+  int len1,
         i,
         si,
         sj,
@@ -40,7 +34,6 @@ void ParallelAlgo::DoFullPairwiseAlignment() {
         seq2;
     float mmScore;
     double _score;
-        
 
     int _gapOpen = 0; // scaled to be an integer, this is not a mistake
     int _gapExtend = 0; // scaled to be an integer, not a mistake
@@ -48,108 +41,115 @@ void ParallelAlgo::DoFullPairwiseAlignment() {
 
     const vector<int>* _ptrToSeq1 = NULL;
     const vector<int>* _ptrToSeq2 = NULL;
-    vector<distMatrixRecord> distMat;
 
-    int r,
-		procNum;
-	  MPI_Comm_rank(MPI_COMM_WORLD, &r);
-  	MPI_Comm_size(MPI_COMM_WORLD, &procNum);
-
-  	int mpiStartIdx = portionPerProc[r-1],
-  		  mpiEndIdx = portionPerProc[r];
-
-    cout << "Proc#" << r << " startIdx: " << mpiStartIdx << ", endIdx: " << mpiEndIdx << endl;
-
-    int initSi = utilityObject->MAX(0, mpiStartIdx),
-        boundSi = utilityObject->MIN(data.numSeqs,mpiEndIdx),
+    int initSi = utilityObject->MAX(0, start),
+        boundSi = utilityObject->MIN(data.numSeqs,end),
         delta = utilityObject->MAX(0, iStart); //TODO: comment
 
     #ifdef DEBUG
-    cout 	<< "Proc #" << r << " initSi: "<< initSi << " boundSi: " << boundSi << endl
-    		<< "mpiStartIdx: " << mpiStartIdx << " mpiEndIdx: " << mpiEndIdx << endl;
-   	#endif
+    cout  << "Proc #" << r << " initSi: "<< initSi << " boundSi: " << boundSi << endl
+        << "start: " << start << " end: " << end << endl;
+    #endif
 
-	for (si = initSi; si < boundSi; si++) {
-	    n = seqArray[translateIndex(si+1, delta+1)].size()-1;
-	    len1 = 0;
-	    for (i = 1; i <= n; i++) {
-	      res = seqArray[translateIndex(si + 1, delta+1)][i];
-	      if ((res != data.gapPos1) && (res != data.gapPos2)) {
-	        len1++;
-	      }
-	    }
-					
-		// Simplify loop vars for OMP
-		int initSj = utilityObject->MAX(si+1, jStart+1),
-		    boundSj = utilityObject->MIN(data.numSeqs,jEnd),
-		    len2;
-																
-		for (sj = initSj; sj < boundSj; sj++) {
-			m = seqArray[translateIndex(sj + 1, delta+1)].size()-1;
-		          
-		  	if (n == 0 || m == 0) {
-		 		distMat.push_back(distMatrixRecord(si+1, sj+1,1.0));
-		 		continue;
-  			}
-
-	      	len2 = 0;
-	      	for (i = 1; i <= m; i++) {
-	        	res = seqArray[translateIndex(sj + 1, delta+1)][i];
-	        	if ((res != data.gapPos1) && (res != data.gapPos2)) {
-	          		len2++;
-	        	}
-	      	}
+  for (si = initSi; si < boundSi; si++) {
+      n = seqArray[translateIndex(si+1, delta+1)].size()-1;
+      len1 = 0;
+      for (i = 1; i <= n; i++) {
+        res = seqArray[translateIndex(si + 1, delta+1)][i];
+        if ((res != data.gapPos1) && (res != data.gapPos2)) {
+          len1++;
+        }
+      }
+          
+    // Simplify loop vars for OMP
+    int initSj = utilityObject->MAX(si+1, jStart+1),
+        boundSj = utilityObject->MIN(data.numSeqs,jEnd),
+        len2;
+                                
+    for (sj = initSj; sj < boundSj; sj++) {
+      m = seqArray[translateIndex(sj + 1, delta+1)].size()-1;
               
-     		data.UpdateGapOpenAndExtend(_gapOpen, _gapExtend, n, m);
+        if (n == 0 || m == 0) {
+        distMat.push_back(distMatrixRecord(si+1, sj+1,1.0));
+        continue;
+        }
+
+          len2 = 0;
+          for (i = 1; i <= m; i++) {
+            res = seqArray[translateIndex(sj + 1, delta+1)][i];
+            if ((res != data.gapPos1) && (res != data.gapPos2)) {
+                len2++;
+            }
+          }
+              
+        data.UpdateGapOpenAndExtend(_gapOpen, _gapExtend, n, m);
             
-      		// align the sequences
-    		seq1 = translateIndex(si + 1, delta+1);
-      		seq2 = translateIndex(sj + 1, delta+1);
+          // align the sequences
+        seq1 = translateIndex(si + 1, delta+1);
+          seq2 = translateIndex(sj + 1, delta+1);
 
-		    _ptrToSeq1 = &seqArray[seq1];
-		    _ptrToSeq2 = &seqArray[seq2];
+        _ptrToSeq1 = &seqArray[seq1];
+        _ptrToSeq2 = &seqArray[seq2];
 
-			SWAlgo swalgo(&data);
-			MMAlgo mmalgo(&data);
-			
-			#ifdef DEBUG
-			cout << "[" << r << "]" << "Starting align: " << seq1 << ":" <<seq2 << endl;
-			#endif
+      SWAlgo swalgo(&data);
+      MMAlgo mmalgo(&data);
+      
+      #ifdef DEBUG
+      cout << "[" << r << "]" << "Starting align: " << seq1 << ":" <<seq2 << endl;
+      #endif
 
-			swalgo.Pass(_ptrToSeq1, _ptrToSeq2, n, m, _gapOpen, _gapExtend);
+      swalgo.Pass(_ptrToSeq1, _ptrToSeq2, n, m, _gapOpen, _gapExtend);
                                
-    		//use Myers and Miller to align two sequences 
-			maxScore = mmalgo.Pass(swalgo.sb1 - 1, swalgo.sb2 - 1, swalgo.se1 - swalgo.sb1 + 1, swalgo.se2 - swalgo.sb2 + 1,
-			    (int)0, (int)0, _ptrToSeq1, _ptrToSeq2, _gapOpen, _gapExtend);	
-			#ifdef DEBUG
-				cout << "maxScore of mmalgo: " << maxScore << endl;		               
-			#endif
-     		// calculate percentage residue identity
-      		mmScore = tracePath(swalgo.sb1, swalgo.sb2, mmalgo.displ, mmalgo.printPtr, _ptrToSeq1, _ptrToSeq2);
-			    
-			#ifdef DEBUG  		
-      			cout << "len1: " << len1 << "; len2: " << len2 << endl;
-      		#endif
- 			if (len1 == 0 || len2 == 0) {
- 				mmScore = 0;
-      		} 
-			else {
-        		mmScore /= (float)utilityObject->MIN(len1, len2);
-      		}
+        //use Myers and Miller to align two sequences 
+      maxScore = mmalgo.Pass(swalgo.sb1 - 1, swalgo.sb2 - 1, swalgo.se1 - swalgo.sb1 + 1, swalgo.se2 - swalgo.sb2 + 1,
+          (int)0, (int)0, _ptrToSeq1, _ptrToSeq2, _gapOpen, _gapExtend);  
+      #ifdef DEBUG
+        cout << "maxScore of mmalgo: " << maxScore << endl;                  
+      #endif
+        // calculate percentage residue identity
+          mmScore = tracePath(swalgo.sb1, swalgo.sb2, mmalgo.displ, mmalgo.printPtr, _ptrToSeq1, _ptrToSeq2);
+          
+      #ifdef DEBUG      
+            cout << "len1: " << len1 << "; len2: " << len2 << endl;
+          #endif
+      if (len1 == 0 || len2 == 0) {
+        mmScore = 0;
+          } 
+      else {
+            mmScore /= (float)utilityObject->MIN(len1, len2);
+          }
 
-      		_score = ((float)100.0 - mmScore) / (float)100.0; 
-      		#ifdef DEBUG
-	      		cout << "mmScore: " << mmScore << endl;		               
-	      		cout << "_score: " << _score << endl;		               
-      		#endif
-		   	
-		   	distMat.push_back(distMatrixRecord(si+1, sj+1, _score));
-		   
-		}
-	}    
+          _score = ((float)100.0 - mmScore) / (float)100.0; 
+          #ifdef DEBUG
+            cout << "mmScore: " << mmScore << endl;                  
+            cout << "_score: " << _score << endl;                  
+          #endif
+        
+        distMat.push_back(distMatrixRecord(si+1, sj+1, _score));
+       
+    }
+  }    
+  return;
+}
+
+void ParallelAlgo::DoFullPairwiseAlignment() {
+
+	//init steps
+	recieveExtendData(); 
+	recieveSequences(); 
+  
+  int r;
+  MPI_Comm_rank(MPI_COMM_WORLD, &r);
+  int mpiStartIdx = 0, mpiEndIdx = 0;
+
+  while (GetNextPortion(mpiStartIdx, mpiEndIdx)) {
+    cout << "Proc#" << r << " startIdx: " << mpiStartIdx << ", endIdx: " << mpiEndIdx << endl;
+    AllToAllPairwiseAlignment(mpiStartIdx, mpiEndIdx);
+  }
+
+  sendDistMat(&distMat);
+  return;
 	
-	sendDistMat(&distMat);
-	return;
 }
 
 void ParallelAlgo::sendDistMat(std::vector<dmRecord>* distMat) {
@@ -204,10 +204,6 @@ void ParallelAlgo::recieveSequences()
   jStart = bounds[2];
   jEnd = bounds[3];
   
-  //TODO: memory leak will be 
-	portionPerProc = new int[procNum];
-	MPI_Bcast(portionPerProc, procNum, MPI_INT, 0, MPI_COMM_WORLD);
-
   const int initSi = utilityObject->MAX(0, iStart),
             NUMBER_OF_SEQ = data.numSeqs - initSi;
   
@@ -231,7 +227,7 @@ void ParallelAlgo::recieveExtendData() {
 
 	MPI_Bcast(&intBuf, 8, MPI_INT, 0, MPI_COMM_WORLD);
 	
-    data.intScale = intBuf[0];
+  data.intScale = intBuf[0];
 	data.matAvgScore = intBuf[1];
 	data.maxRes = intBuf[2];
 	data.DNAFlag = (bool)intBuf[3];
@@ -284,6 +280,30 @@ void ParallelAlgo::recieveExtendData() {
     #endif
 
 	return;
+}
+
+bool ParallelAlgo::GetNextPortion(int& start, int& end) {
+  
+  int r,
+      recvBuf[2] = {0,0};
+
+  MPI_Comm_rank(MPI_COMM_WORLD, &r);
+  MPI_Sendrecv(&r, 1, MPI_INT, 0, 0, &recvBuf, 2, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+  start = recvBuf[0];
+  end = recvBuf[1];
+
+  cout << "Proc#"<<r<<" recieved new portion. Start:"<<start<<" End:"<<end<<endl;
+
+  if ((start >= 0) && (end > 0))
+      return true;
+  return false;
+  /*int MPI_Sendrecv(void *sendbuf, int sendcount, MPI_Datatype sendtype, 
+                int dest, int sendtag,
+                void *recvbuf, int recvcount, MPI_Datatype recvtype, 
+                int source, int recvtag,
+                MPI_Comm comm, MPI_Status *status); */
+
 }
 
 void ExternalData::UpdateGapOpenAndExtend(int& _gapOpen, int& _gapExtend, int n, int m)

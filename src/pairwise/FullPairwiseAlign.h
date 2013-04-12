@@ -27,9 +27,12 @@ class FullPairwiseAlign : public PairwiseAlignBase
       /* Functions */
       //MPI
       void BroadcastExtendData();
-      void BroadcastSequences(Alignment*, int,int,int,int);
+      void BroadcastSequencesAndBounds(Alignment*, int,int,int,int);
       void GatherDistMatrix(DistMatrix*);
-      void SchedulePortionOfSequencesForEachProc(const int, int*); //has side effect!
+      void CalculateNumbersOfSeqToAlignForeachIteration(const int numOfSeq, int jStart, int jEnd, std::vector<int>& vec, int& countOfSequences);
+      void SchedulePortions(const vector<int>& vec, int);
+    
+      static int NUMBER_OF_SEQ;    
 };
 
 }
