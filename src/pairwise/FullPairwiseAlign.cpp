@@ -74,8 +74,7 @@ void FullPairwiseAlign::GatherDistMatrix(DistMatrix* distMat){
   //Recieve the size of distMatrix for each proc
   vector<int> recieveCounts(procNum);
   MPI_Gather(MPI_IN_PLACE, 0, MPI_INT, recieveCounts.data(), 1, MPI_INT, 0, MPI_COMM_WORLD);
-  MPI_Barrier(MPI_COMM_WORLD);
-
+ 
   vector<int> displacements(procNum);
   displacements[0] = 0;
   displacements[1] = 0;
@@ -88,8 +87,7 @@ void FullPairwiseAlign::GatherDistMatrix(DistMatrix* distMat){
   vector<dmRecord> recvBuf(sum);
   MPI_Gatherv(MPI_IN_PLACE, 0, ExtendData::mpi_dmRecord_type,
               recvBuf.data(), recieveCounts.data(), displacements.data(), ExtendData::mpi_dmRecord_type, 0, MPI_COMM_WORLD);
-  MPI_Barrier(MPI_COMM_WORLD);
-  
+ 
   for (int i=0; i<recvBuf.size(); i++) {
       int si = recvBuf[i].col,
           sj = recvBuf[i].row;

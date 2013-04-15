@@ -160,12 +160,11 @@ void ParallelAlgo::sendDistMat(std::vector<dmRecord>* distMat) {
    //cout << "Worker#"<< r <<" before: \tRow: " << (*distMat)[0].row << "\tCol: " << (*distMat)[0].col << "\tVal: " << (*distMat)[0].val << endl;
   int size = distMat->size();
   MPI_Gather(&size, 1, MPI_INT, NULL, 1, MPI_INT, 0, MPI_COMM_WORLD);
-  MPI_Barrier(MPI_COMM_WORLD);
 
   vector<dmRecord> unwindedMat(size);
   for (int i=0; i<distMat->size(); i++) {
     if (((*distMat)[i].row < 0) || ((*distMat)[i].col < 0)) {
-      cout << "Invalid data in sender!" << endl;
+      cerr << "Invalid data in sender!" << endl;
       exit(-99);
     }
     unwindedMat[i].row = (*distMat)[i].row;
@@ -176,7 +175,6 @@ void ParallelAlgo::sendDistMat(std::vector<dmRecord>* distMat) {
    // cout << "Worker#" << r <<" after: \tRow: " << unwindedMat[0].row << "\tCol: " << unwindedMat[0].col << "\tVal: " << unwindedMat[0].val << endl;
   MPI_Gatherv(unwindedMat.data(), size, ExtendData::mpi_dmRecord_type, NULL, NULL, NULL , ExtendData::mpi_dmRecord_type, 0, MPI_COMM_WORLD);
   //MPI_Gather(unwindedMat.data(), maxSeqCount, ExtendData::mpi_dmRecord_type, NULL, maxSeqCount, ExtendData::mpi_dmRecord_type, 0, MPI_COMM_WORLD);
-  MPI_Barrier(MPI_COMM_WORLD);
 	
   return;
 }
@@ -259,7 +257,7 @@ void ParallelAlgo::recieveExtendData() {
    	delete[] matrix;    
 
     #ifdef DEBUG
-    	cout << "data.intScale:       " << data.intScale << endl;
+    cout << "data.intScale:       " << data.intScale << endl;
 		cout << "data.matAvgScore:    " << data.matAvgScore << endl;
 		cout << "data.maxRes:         " << data.maxRes << endl;
 		cout << "data.DNAFlag:        " << data.DNAFlag << endl;
