@@ -47,16 +47,18 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
       BroadcastExtendData();
       BroadcastSequencesAndBounds(alignPtr, iStart, iEnd, jStart, jEnd);
 
+      cerr << "\tElapsed time for broadcast data: " << setprecision(10) << MPI_Wtime() - startTime << " sec" << endl;  
+      
       vector<int> numberOfSeqToAlignPerIteration(NUMBER_OF_SEQ);
       int countOfSeq = 0;
 
       CalculateNumbersOfSeqToAlignForeachIteration(NUMBER_OF_SEQ, jStart, jEnd, numberOfSeqToAlignPerIteration, countOfSeq);
       SchedulePortions(numberOfSeqToAlignPerIteration, countOfSeq);
-      GatherDistMatrix(distMat);   
-      
-      double endTime = MPI_Wtime();
 
-      cerr << "\tElapsed time for FullPairwiseAlign: " << setprecision(10) << endTime - startTime << " sec" << endl;       
+      double startGatheringTime = MPI_Wtime();
+      GatherDistMatrix(distMat);   
+      cerr << "\tElapsed time for gathering data: " << setprecision(10) << MPI_Wtime() - startGatheringTime << " sec" << endl;  
+      cerr << "\tElapsed time for FullPairwiseAlign: " << setprecision(10) << MPI_Wtime() - startTime << " sec" << endl;       
     }
     catch(const exception& e)
     {
@@ -195,7 +197,7 @@ void FullPairwiseAlign::SchedulePortions(const vector<int>& vec, int count) {
   MPI_Comm_size(MPI_COMM_WORLD, &procNum);
   procNum--;
 
-  const int k = 16; //some coefficient, power of 2
+  const int k = 128; //some coefficient, power of 2
   
   bool hasNextPortion = true;
   int i = 2;
@@ -212,7 +214,7 @@ void FullPairwiseAlign::SchedulePortions(const vector<int>& vec, int count) {
       int sum = 0,
           idx = start;
 
-      //decrease portion size
+      //increase portion size
       if (iterNum == procNum) {
         if (i < k) {
           currentSeqPortion = (count * i) / (procNum * k);
@@ -223,21 +225,23 @@ void FullPairwiseAlign::SchedulePortions(const vector<int>& vec, int count) {
         continue;
       }
       
-
-      //finding correct iterations to perform for align neede number of seq
+      //finding correct iterations to perform for align needed number of seq
       while ((sum < currentSeqPortion) && (idx<vec.size())) {
         sum += vec[idx++];
       }
 
       //means that all seq are aligned
-      if (idx == vec.size()) 
+      if (idx == vec.size()) {
         hasNextPortion = false;
+        //continue;
+      }
 
-
+      if (idx == start) {
+        continue;
+      }
+        
       length = idx - start;
-
       int sendBuf[2] = {start,idx};
-
       start = idx;
 
       MPI_Recv(&rank, 1, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
