@@ -269,7 +269,6 @@ void ParallelAlgo::recieveExtendData() {
 		cout << "data.gapExtendScale: " << data.gapExtendScale << endl;
 		cout << "data.pwGapOpen:      " << data.pwGapOpen << endl;
 		cout << "data.pwGapExtend:    " << data.pwGapExtend << endl;
-
 		cout << "data.matrix: " << endl;
 		for (int i=0; i<clustalw::NUMRES; i++) {
 			cout << data.matrix[clustalw::NUMRES-1][i] << ", ";
@@ -291,10 +290,11 @@ bool ParallelAlgo::GetNextPortion(int& start, int& end) {
   start = recvBuf[0];
   end = recvBuf[1];
 
-  cout << "Proc#"<<r<<" recieved new portion. Start:"<<start<<" End:"<<end<<endl;
-
-  if ((start >= 0) && (end > 0))
-      return true;
+  if ((start >= 0) && (end > 0)) {
+    cout << "Proc#"<<r<<" recieved new portion. Start:"<<start<<" End:"<<end<<endl;
+    return true;
+  }
+  cout << "Proc#"<<r<<" recieved terminate signal"<<endl;
   return false;
   /*int MPI_Sendrecv(void *sendbuf, int sendcount, MPI_Datatype sendtype, 
                 int dest, int sendtag,

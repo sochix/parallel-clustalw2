@@ -56,7 +56,7 @@ void FullPairwiseAlign::pairwiseAlign(Alignment *alignPtr, DistMatrix *distMat, 
       
       double endTime = MPI_Wtime();
 
-      cout << "\tElapsed time for FullPairwiseAlign: " << setprecision(10) << endTime - startTime << " sec" << endl;       
+      cerr << "\tElapsed time for FullPairwiseAlign: " << setprecision(10) << endTime - startTime << " sec" << endl;       
     }
     catch(const exception& e)
     {
@@ -195,11 +195,11 @@ void FullPairwiseAlign::SchedulePortions(const vector<int>& vec, int count) {
   MPI_Comm_size(MPI_COMM_WORLD, &procNum);
   procNum--;
 
-  const int k = 4; //some coefficient
+  const int k = 16; //some coefficient, power of 2
   
   bool hasNextPortion = true;
-  int i = 1;
-  int currentSeqPortion = count / (procNum * k * i),
+  int i = 2;
+  int currentSeqPortion = count / (procNum * k),
       start = 0,
       length = 0;  
   int curProc = 0;
@@ -214,12 +214,15 @@ void FullPairwiseAlign::SchedulePortions(const vector<int>& vec, int count) {
 
       //decrease portion size
       if (iterNum == procNum) {
-        currentSeqPortion = count / (procNum * k * i);
-        i++;
-        iterNum = 0;
+        if (i < k) {
+          currentSeqPortion = (count * i) / (procNum * k);
+          i+=2;
+          iterNum = 0;
+          cout << "currentSeqPortion is "<<currentSeqPortion << endl;  
+        }
         continue;
       }
-      cout << "currentSeqPortion is "<<currentSeqPortion << endl;
+      
 
       //finding correct iterations to perform for align neede number of seq
       while ((sum < currentSeqPortion) && (idx<vec.size())) {
@@ -238,7 +241,9 @@ void FullPairwiseAlign::SchedulePortions(const vector<int>& vec, int count) {
       start = idx;
 
       MPI_Recv(&rank, 1, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      cout << "Master process recieved request form proc #" << rank << endl;
+      #ifdef DEBUG
+        cout << "Master process recieved request form proc #" << rank << endl;
+      #endif
       MPI_Send(&sendBuf, 2, MPI_INT, rank, 0, MPI_COMM_WORLD);  
       iterNum++;
 
